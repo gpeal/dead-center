@@ -299,9 +299,10 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .statrow .tile{padding:10px;gap:6px;min-width:0}
 .statrow .tile .num{font-size:21px;line-height:1}
 .statrow .tile.best .eyebrow{color:var(--green)}
-.misses{display:flex;flex-direction:column;padding:6px 12px}
-.missrow{display:grid;grid-template-columns:46% 1fr auto;gap:12px;align-items:center;padding-block:8px;border-top:1px solid var(--line);text-align:left;transition:transform .12s}
-.missrow:first-child{border-top:0}
+.misses{display:flex;flex-direction:column;padding:12px 12px 4px}
+.misses .mapwrap{margin-bottom:6px}
+.missrow{display:grid;grid-template-columns:40% 1fr auto;gap:12px;align-items:center;padding-block:6px;border-top:1px solid var(--line);text-align:left;transition:transform .12s}
+.misses .mapwrap + .missrow{border-top:0}
 .missrow:active{transform:scale(.985)}
 .missrow .scatter{border-radius:10px}
 .missrow .t{display:flex;flex-direction:column;gap:3px;font-size:13.5px;line-height:1.25;min-width:0}

@@ -4,7 +4,7 @@ import { useActions, useScheme, type Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
 import { UpdateBanner } from '../components/Toasts';
 import { statsFor, troubleKeys } from '../lib/analysis';
-import { drawDots, drawScatter } from '../lib/draw';
+import { drawDots, drawMissKeys, drawScatter } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
 import { lab } from '../lib/keys';
@@ -57,6 +57,10 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
       clearTimeout(c);
     };
   }, [pbW, s]);
+  const paintMisses = useCallback((kb: Kb) => {
+    const cv = kb.el.parentElement?.querySelector('canvas');
+    if (cv) drawMissKeys(cv, kb, taps, missKeys.map((m) => m[0]));
+  }, [taps]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawDots(cv, kb, taps);
@@ -85,6 +89,7 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
           </div>
           {missKeys.length ? (
             <section className="card misses">
+              <KeyboardView className="mapwrap" paint={paintMisses}><canvas /></KeyboardView>
               {missKeys.map(([k, arr]) => <MissRow key={k} k={k} misses={arr} taps={taps} />)}
               {slips && <p className="slips">{slips}</p>}
             </section>
@@ -117,7 +122,7 @@ function MissRow({ k, misses, taps }: { k: string; misses: Tap[]; taps: Tap[] })
   const cv = useRef<HTMLCanvasElement>(null);
   const s = useMemo(() => statsFor(taps, k, 1000), [taps, k]);
   useLayoutEffect(() => {
-    drawScatter(cv.current!, k, s, { reach: 1.2, padY: 12 });
+    drawScatter(cv.current!, k, s, { reach: 1.2, padY: 8 });
   }, [k, s, scheme]);
   const onto: Record<string, number> = {};
   misses.forEach((t) => (onto[t.h] = (onto[t.h] || 0) + 1));

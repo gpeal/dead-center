@@ -145,6 +145,33 @@ export function drawDots(cv: HTMLCanvasElement, kb: Kb, taps: Tap[]) {
   c.globalAlpha = 1;
 }
 /** Zoomed view of one key and its neighbors with each tap on it. `reach` is how many key widths to show on each side. */
+/** The round's most-missed keys, outlined on the full keyboard, with a dot where each of their misses landed. */
+export function drawMissKeys(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], keys: string[]) {
+  const { c } = sizeCanvas(cv, kb);
+  const red = cssVar('--red'), edge = cssVar('--kb-key');
+  for (const k of KEYS) {
+    const e = kb.keyEls[k.id];
+    e.style.background = '';
+    e.style.boxShadow = '';
+  }
+  for (const k of keys) {
+    const e = kb.keyEls[k];
+    if (!e) continue;
+    e.style.background = 'color-mix(in srgb, var(--red) 28%, var(--kb-key))';
+    e.style.boxShadow = 'inset 0 0 0 2px var(--red)';
+  }
+  for (const t of taps) {
+    if (t.h === t.k || !keys.includes(t.k)) continue;
+    const key = KEY[t.k], p = kb.toPx(key.cx + t.dx, key.cy + t.dy);
+    c.beginPath();
+    c.arc(p.x, p.y, 3.4, 0, 7);
+    c.fillStyle = red;
+    c.fill();
+    c.strokeStyle = edge;
+    c.lineWidth = 1;
+    c.stroke();
+  }
+}
 export function drawScatter(cv: HTMLCanvasElement, k: string, s: KeyStats, { reach = 1.55, padY = 22 } = {}) {
   const key = KEY[k], dpr = devicePixelRatio || 1, W = cv.clientWidth || 320;
   const spanX = k === 'space' ? key.w / 2 + 30 : key.w / 2 + PITCH * reach, spanY = KH / 2 + padY, sc = W / (2 * spanX), H = Math.round(2 * spanY * sc);
