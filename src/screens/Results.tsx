@@ -10,7 +10,7 @@ import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { RoundResult } from '../lib/round';
 import { allTaps, type Mode, type Tap } from '../lib/store';
-import { pct, reduceMotion } from '../lib/util';
+import { reduceMotion } from '../lib/util';
 
 function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -34,32 +34,28 @@ function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
 }
 
 export function Results({ result, onStart, onClose }: { result: RoundResult; onStart: (mode: Mode, focus?: string[]) => void; onClose: (then: Tab) => void }) {
-  const { sess: s, xp, before, after, taps, pbW } = result;
+  const { sess: s, taps, pbW } = result;
   const acc = s.acc, prec = s.prec || 0;
   const grade = acc >= 0.99 && prec >= 0.6 ? 'Dead center.' : acc >= 0.96 ? 'Sharp.' : acc >= 0.9 ? 'Solid.' : acc >= 0.8 ? 'Getting there.' : 'Wobbly.';
   const stars = +(acc >= 0.9) + +(acc >= 0.96) + +(acc >= 0.99 || (acc >= 0.975 && prec >= 0.6));
   const byKey: Record<string, Tap[]> = {};
   for (const t of taps) if (t.h !== t.k) (byKey[t.k] ||= []).push(t);
   const missKeys = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length).slice(0, 3);
-  const lvUp = after.lvl > before.lvl;
-  const [xpW, setXpW] = useState(lvUp ? 0 : pct(before.into / before.need));
   const [focus] = useState(() => (missKeys.length ? missKeys.slice(0, 2).map((m) => m[0]) : troubleKeys(allTaps()).slice(0, 2).map((t) => t.k)));
 
   const celebrated = useRef(false);
   useEffect(() => {
     window.scrollTo(0, 0);
-    const t = setTimeout(() => setXpW(pct(after.into / after.need)), 450);
     let c = 0;
-    if (lvUp || s.hits === s.n || pbW) c = window.setTimeout(confetti, 350);
+    if (s.hits === s.n || pbW) c = window.setTimeout(confetti, 350);
     if (!celebrated.current) {
       celebrated.current = true;
-      if (lvUp || s.hits === s.n || pbW) sound('chime');
+      if (s.hits === s.n || pbW) sound('chime');
     }
     return () => {
-      clearTimeout(t);
       clearTimeout(c);
     };
-  }, [after, lvUp, pbW, s]);
+  }, [pbW, s]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawDots(cv, kb, taps);
@@ -85,20 +81,6 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
             <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
             <div className="legend"><span className="dot" style={{ background: 'var(--green)' }} />hit <span className="dot" style={{ background: 'var(--red)' }} />miss</div>
           </section>
-          <section className="card xpcard">
-            <div className="row"><span className="eyebrow">Score {s.score}</span><b className="num" style={{ fontSize: 22, color: 'var(--accent)' }}>+{xp} XP</b></div>
-            <div className="bar"><i style={{ width: xpW + '%' }} /></div>
-            <div className="xpmeta"><span>Level {after.lvl} · {after.rank}</span><span>{after.into} / {after.need}</span></div>
-          </section>
-          {lvUp && (
-            <div className="levelup">
-              <Icon name="bolt" />
-              <div>
-                <b>Level {after.lvl}{after.rank !== before.rank ? ` · ${after.rank}` : ''}</b>
-                <span>{after.rank !== before.rank ? 'New rank unlocked.' : 'Keep the streak going.'}</span>
-              </div>
-            </div>
-          )}
           {pbW && <div className="samplebar" style={{ background: 'var(--green-soft)', color: 'var(--green)' }}><b>New speed record: {Math.round(s.wpm || 0)} wpm.</b></div>}
           <SectionH title="This round" />
           <section className="card notes">

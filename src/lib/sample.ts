@@ -43,7 +43,7 @@ export function makeSample(): Dataset {
         prev = ch === ' ' ? '_' : ch.toLowerCase();
       }
     }
-    sessions.push({ id: sid, ts: sid, mode: s === 0 ? 'baseline' : s % 3 === 2 ? 'drill' : 'round', focus: s % 3 === 2 ? 'pl' : '', n, hits: h, acc: h / n, prec: ps / h, wpm: 30 + s * 1.1 + r() * 3, score: 0, combo: 0 });
+    sessions.push({ id: sid, ts: sid, mode: s === 0 ? 'baseline' : s % 3 === 2 ? 'drill' : 'round', focus: s % 3 === 2 ? 'pl' : '', n, hits: h, acc: h / n, prec: ps / h, wpm: 30 + s * 1.1 + r() * 3, combo: 0 });
   }
   return { taps, sessions, sample: true };
 }

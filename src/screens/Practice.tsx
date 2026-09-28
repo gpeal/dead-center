@@ -3,7 +3,7 @@ import { Icon } from '../components/Icon';
 import { KeyboardView } from '../components/KeyboardView';
 import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
-import { mult, type Hint, type Round } from '../lib/round';
+import type { Hint, Round } from '../lib/round';
 import { save, store } from '../lib/store';
 import { COARSE, pct } from '../lib/util';
 
@@ -72,7 +72,6 @@ export function Practice({ round: r, onExit }: { round: Round; onExit: () => voi
     setSoundOn(store.S.settings.sound);
   };
 
-  const m = mult(r.combo), tiers = [0, 10, 25, 50, 1e9], ti = tiers.findIndex((t, i) => r.combo >= t && r.combo < tiers[i + 1]);
   const hint: Hint = armedAt ? { tone: 'bad', label: 'End round?', text: 'Tap × again to stop. Taps so far are kept.' } : r.hint || BASE_HINT[r.mode];
   const title = r.mode === 'baseline' ? 'Baseline' : r.mode === 'drill' ? `Drill · ${r.focus.map(lab).join(' ')}` : 'Adaptive round';
 
@@ -97,16 +96,11 @@ export function Practice({ round: r, onExit }: { round: Round; onExit: () => voi
           <div className="ps"><span className="eyebrow">Accuracy</span><span className="num">{r.scored ? pct(r.good / r.scored) + '%' : '–'}</span></div>
           <div className="ps">
             <span className="eyebrow">Combo</span>
-            <div className="combo">
-              <span className="num">{r.combo}</span>
-              <span key={m} className={'mult' + (m > 1 ? ' pop' : '')}>×{m}</span>
-            </div>
-            <i className="cbar" style={{ width: m >= 4 ? '100%' : pct((r.combo - tiers[ti]) / (tiers[ti + 1] - tiers[ti])) + '%' }} />
+            <span className="num">{r.combo}</span>
           </div>
           <div className="ps">
-            <span className="eyebrow">Score</span>
-            <span className="num">{r.score}</span>
-            {r.floater.n > 0 && <span key={r.floater.n} className="floater">+{r.floater.pts}</span>}
+            <span className="eyebrow">Centered</span>
+            <span className="num">{r.precN ? pct(r.precSum / r.precN) + '%' : '–'}</span>
           </div>
         </div>
         <div className="p-text">

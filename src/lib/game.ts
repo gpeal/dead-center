@@ -65,18 +65,6 @@ export function linesFor(mode: Mode, focus: string[]) {
   return lines.map((l) => l[0].toUpperCase() + l.slice(1));
 }
 
-/* ================= gamification ================= */
-const RANKS = ['Rookie', 'Tapper', 'Steady Hand', 'Marksman', 'Sharpshooter', 'Surgeon', 'Dead Center'];
-export interface LevelInfo { lvl: number; into: number; need: number; rank: string }
-export function levelInfo(xp: number): LevelInfo {
-  let lvl = 1, base = 0, need = 150;
-  while (xp >= base + need) {
-    base += need;
-    lvl++;
-    need = Math.round(need * 1.12);
-  }
-  return { lvl, into: xp - base, need, rank: RANKS[Math.min(RANKS.length - 1, Math.floor((lvl - 1) / 3))] };
-}
 export const modeName = (s: Pick<Session, 'mode' | 'focus'>) =>
   s.mode === 'baseline' ? 'Baseline' : s.mode === 'drill' ? `Drill · ${(s.focus || '').split('').map((c) => (c === '_' ? 'Space' : c === '^' ? 'Shift' : c.toUpperCase())).join(' ')}` : 'Round';
 export function streakNow() {

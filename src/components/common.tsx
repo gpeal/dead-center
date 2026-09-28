@@ -1,8 +1,8 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { lab } from '../lib/keys';
-import { levelInfo, streakNow } from '../lib/game';
-import { store, type Mode } from '../lib/store';
+import { streakNow } from '../lib/game';
+import type { Mode } from '../lib/store';
 import { clamp } from '../lib/util';
 
 export type Tab = 'home' | 'map' | 'progress';
@@ -40,9 +40,6 @@ export function Topbar() {
             {st}
           </span>
         )}
-        <span className="chip" title="Level">
-          Lv {levelInfo(store.S.xp).lvl}
-        </span>
       </div>
     </header>
   );

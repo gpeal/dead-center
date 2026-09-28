@@ -83,10 +83,6 @@ p{margin:0}
 .level{display:grid;grid-template-columns:1fr auto;gap:14px 16px;align-items:center}
 .level .rank{display:flex;flex-direction:column;gap:6px;min-width:0}
 .level .rank h1{font:800 26px/1.05 var(--f-display);font-variation-settings:"wdth" 122;letter-spacing:-.015em}
-.xpbar{grid-column:1/-1;display:flex;flex-direction:column;gap:6px}
-.bar{height:10px;border-radius:99px;background:var(--surface-2);overflow:hidden;position:relative}
-.bar i{position:absolute;inset:0 auto 0 0;border-radius:inherit;background:linear-gradient(90deg,var(--accent),color-mix(in srgb,var(--accent) 55%,var(--gold)));transition:width 1s cubic-bezier(.2,.8,.2,1)}
-.xpmeta{display:flex;justify-content:space-between;font:500 11px/1 var(--f-mono);color:var(--muted)}
 .goal{position:relative;width:68px;height:68px}
 .goal svg{width:100%;height:100%;transform:rotate(-90deg)}
 .goal .lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1}
@@ -145,7 +141,7 @@ p{margin:0}
 
 /* recent rounds */
 .rounds{display:flex;flex-direction:column}
-.rrow{display:grid;grid-template-columns:1fr repeat(3,56px);gap:8px;align-items:center;padding-block:10px;border-top:1px solid var(--line);font-size:14px}
+.rrow{display:grid;grid-template-columns:1fr repeat(2,56px);gap:8px;align-items:center;padding-block:10px;border-top:1px solid var(--line);font-size:14px}
 .rrow:first-child{border-top:0}
 .rrow .m{text-align:right;font:500 13px/1 var(--f-mono);font-variant-numeric:tabular-nums}
 .rrow .n{display:flex;flex-direction:column;gap:3px;min-width:0}
@@ -241,11 +237,6 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .p-stats{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:8px;margin-top:14px}
 .ps{background:var(--surface);border-radius:14px;padding:9px 11px;display:flex;flex-direction:column;gap:5px;min-width:0;position:relative;overflow:hidden}
 .ps .num{font-size:21px;line-height:1}
-.ps .combo{display:flex;align-items:baseline;gap:6px}
-.mult{font:700 12px/1 var(--f-mono);color:var(--gold-ink);background:var(--gold-soft);padding:3px 5px;border-radius:6px}
-.mult.pop{animation:pop .45s cubic-bezier(.3,1.6,.5,1)}
-@keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
-.cbar{position:absolute;left:0;bottom:0;height:3px;background:var(--gold);transition:width .15s}
 .p-text{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;gap:14px;padding-block:14px 26px}
 .line{font:500 27px/1.32 var(--f-body);letter-spacing:.005em;color:var(--faint);word-spacing:.04em}
 .line .w{display:inline-block;white-space:nowrap}
@@ -269,8 +260,6 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .next{font:500 16px/1.35 var(--f-body);color:var(--faint);opacity:.75}
 .p-hint{font-size:13px;color:var(--muted);display:flex;align-items:center;gap:8px;min-height:20px}
 .p-hint .pill{flex:none}
-.floater{position:absolute;right:10px;top:8px;font:700 12px/1 var(--f-mono);color:var(--gold-ink);pointer-events:none;animation:floatUp .7s ease-out forwards}
-@keyframes floatUp{from{opacity:1;transform:none}to{opacity:0;transform:translateY(-16px)}}
 
 /* ---------- keyboard (iOS 26, measured from a 402pt device) ---------- */
 .kbhost{flex:none;width:100%;max-width:480px;margin:0 auto;position:relative}
@@ -315,13 +304,6 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 @keyframes starIn{from{opacity:0;transform:scale(0) rotate(-40deg)}to{opacity:1;transform:none}}
 .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
 .statgrid .tile .num{font-size:30px}
-.xpcard{display:flex;flex-direction:column;gap:10px}
-.xpcard .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
-.levelup{background:linear-gradient(135deg,var(--accent),color-mix(in srgb,var(--accent) 40%,var(--gold)));color:#fff;border-radius:16px;padding:14px 16px;display:flex;align-items:center;gap:12px;animation:slam .6s .5s cubic-bezier(.2,1.5,.4,1) both}
-.levelup > div{display:flex;flex-direction:column;gap:2px}
-.levelup b{font:850 20px/1.1 var(--f-display);font-variation-settings:"wdth" 120}
-.levelup span{font-size:13px;opacity:.9}
-.levelup svg{width:34px;height:34px;flex:none}
 .notes{display:flex;flex-direction:column;gap:8px}
 .note{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;font-size:14px;line-height:1.35}
 .btnstack{display:flex;flex-direction:column;gap:10px}

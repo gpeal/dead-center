@@ -1,6 +1,6 @@
 import { KEY, edist, quality, focusCode, type KeyDef } from './keys';
 import { buzz, sound } from './feedback';
-import { levelInfo, linesFor, type LevelInfo } from './game';
+import { linesFor } from './game';
 import { commitTaps, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
 import { dayDiff, today } from './util';
 import type { Point, ShiftState } from './keyboard';
@@ -8,25 +8,23 @@ import type { Point, ShiftState } from './keyboard';
 export type CharState = 'ok' | 'miss' | 'case' | 'fixed' | 'skip';
 export interface Hint { tone: 'ok' | 'warn' | 'bad'; label: string; text: string }
 export interface RoundResult {
-  sess: Session; xp: number; before: LevelInfo; after: LevelInfo; taps: Tap[]; pbW: boolean;
+  sess: Session; taps: Tap[]; pbW: boolean;
   caseSlips: number; realigns: number; maxBull: number;
 }
 interface Ev { hit: string; down: Point; dt: number; snap: Snap; pos: number; ok: boolean; keyOk: boolean }
-const SNAP_KEYS = ['ci', 'scored', 'good', 'precSum', 'precN', 'score', 'combo', 'maxCombo', 'bull', 'maxBull', 'caseSlips', 'shift'] as const;
+const SNAP_KEYS = ['ci', 'scored', 'good', 'precSum', 'precN', 'combo', 'maxCombo', 'bull', 'maxBull', 'caseSlips', 'shift'] as const;
 type SnapKey = (typeof SNAP_KEYS)[number];
 type Snap = { state: CharState[]; tapsLen: number } & Pick<Round, SnapKey>;
-
-export const mult = (c: number) => (c >= 50 ? 4 : c >= 25 ? 3 : c >= 10 ? 2 : 1);
 
 /** One practice round. Mutable on purpose: the screen re-renders from it after every tap via subscribe(). */
 export class Round {
   lines: string[];
   li = 0; ci = 0; state: CharState[] = []; taps: TapRow[] = [];
-  t0 = 0; tLast = 0; score = 0; combo = 0; maxCombo = 0; bull = 0; maxBull = 0;
+  t0 = 0; tLast = 0; combo = 0; maxCombo = 0; bull = 0; maxBull = 0;
   scored = 0; good = 0; precSum = 0; precN = 0; caseSlips = 0; shift: ShiftState = 'on'; lastShiftT = 0;
   hist: Ev[] = []; realigns = 0; sid = Date.now(); done = false;
   // one-shot UI effects, each with a counter so the screen can restart the animation
-  shake = { i: -1, n: 0 }; floater = { pts: 0, n: 0 }; hint: Hint | null = null; private hintT = 0;
+  shake = { i: -1, n: 0 }; hint: Hint | null = null; private hintT = 0;
   private listeners = new Set<() => void>();
   private version = 0;
 
@@ -53,7 +51,8 @@ export class Round {
     this.taps.push([this.sid, tk, hit, Math.round(dx * 10), Math.round(dy * 10), prev, Math.min(dt, 9999)]);
     return { dx, dy, key };
   }
-  private scoreTap(ok: boolean, r: { dx: number; dy: number; key: KeyDef }, live = true) {
+  // counts a tap toward accuracy, centering, combo and bullseye runs
+  private grade(ok: boolean, r: { dx: number; dy: number; key: KeyDef }) {
     this.scored++;
     if (!ok) {
       this.combo = 0;
@@ -64,14 +63,11 @@ export class Round {
     const q = quality(r.dx, r.dy, r.key);
     this.precSum += 1 - Math.min(1, edist(r.dx, r.dy, r.key));
     this.precN++;
-    const pts = (q === 'bull' ? 3 : q === 'good' ? 2 : 1) * mult(this.combo);
-    this.score += pts;
     this.combo++;
     this.maxCombo = Math.max(this.maxCombo, this.combo);
     if (q === 'bull') {
       this.bull++;
       this.maxBull = Math.max(this.maxBull, this.bull);
-      if (live) this.floater = { pts, n: this.floater.n + 1 };
     } else this.bull = 0;
   }
   private shakeAt(i: number) {
@@ -90,7 +86,7 @@ export class Round {
     this.taps.length = s.tapsLen;
   }
   // type the current character with one tap; returns what happened so it can be undone later
-  private typeKey(hit: string, down: Point, dt: number, live: boolean): Ev {
+  private typeKey(hit: string, down: Point, dt: number): Ev {
     const line = this.line, ch = line[this.ci], exp = this.expectedKey(), tk = exp === 'shift' ? ch.toLowerCase() : exp;
     const prev = this.ci > 0 ? (line[this.ci - 1] === ' ' ? '_' : line[this.ci - 1].toLowerCase()) : '';
     const snap = this.snapshot(), r = this.record(tk, hit, down, dt, prev);
@@ -100,7 +96,7 @@ export class Round {
       ok = false;
       this.caseSlips++;
     }
-    this.scoreTap(ok, r, live);
+    this.grade(ok, r);
     this.state[this.ci] = ok ? (this.state[this.ci] === 'miss' ? 'fixed' : 'ok') : keyOk ? 'case' : 'miss';
     if (this.shift === 'on') this.shift = 'off';
     const pos = this.ci;
@@ -109,7 +105,7 @@ export class Round {
   }
   private replay(evs: Ev[]) {
     this.hist = [];
-    for (const e of evs) this.hist.push(this.typeKey(e.hit, e.down, e.dt, false));
+    for (const e of evs) this.hist.push(this.typeKey(e.hit, e.down, e.dt));
   }
   private tryRealign(): { type: 'skip'; chars: string } | { type: 'double' | 'retype' } | null {
     const H = this.hist, n = H.length, line = this.line;
@@ -173,12 +169,12 @@ export class Round {
       const dbl = now - this.lastShiftT < 350;
       this.lastShiftT = now;
       if (exp === 'shift') {
-        this.scoreTap(true, this.record('shift', 'shift', down, dt, prev));
+        this.grade(true, this.record('shift', 'shift', down, dt, prev));
         this.shift = 'on';
         sound('mod');
       } else if (this.shift === 'off') {
         // stray Shift while aiming at a letter
-        this.scoreTap(false, this.record(exp, 'shift', down, dt, prev));
+        this.grade(false, this.record(exp, 'shift', down, dt, prev));
         this.shift = 'on';
         sound('miss');
         this.shakeAt(this.ci);
@@ -197,7 +193,7 @@ export class Round {
       const ps = this.ci > 0 ? this.state[this.ci - 1] : null;
       if (ps === 'ok' || ps === 'fixed' || ps == null) {
         // deleting a correct letter means Delete was a miss
-        this.scoreTap(false, this.record(exp === 'shift' ? ch.toLowerCase() : exp, 'del', down, dt, prev));
+        this.grade(false, this.record(exp === 'shift' ? ch.toLowerCase() : exp, 'del', down, dt, prev));
         sound('miss');
       } else sound('mod'); // fixing a typo is fine
       if (this.ci > 0) {
@@ -209,7 +205,7 @@ export class Round {
       return this.changed();
     }
     // any other key types (or tries to type) the current character, then the cursor moves on
-    const ev = this.typeKey(hit, down, dt, true);
+    const ev = this.typeKey(hit, down, dt);
     this.hist.push(ev);
     if (this.hist.length > 4) this.hist.shift();
     const re = !ev.keyOk ? this.tryRealign() : null;
@@ -258,11 +254,7 @@ export class Round {
     clearTimeout(this.hintT);
     const n = this.scored, acc = this.good / n, prec = this.precN ? this.precSum / this.precN : 0;
     const dur = Math.max(1, (this.tLast - this.t0) / 1000), chars = this.lines.reduce((a, l) => a + l.length, 0), wpm = chars / 5 / (dur / 60);
-    const sess: Session = { id: this.sid, ts: Date.now(), mode: this.mode, focus: this.focus.map(focusCode).join(''), n, hits: this.good, acc, prec, wpm: Math.round(wpm * 10) / 10, score: this.score, combo: this.maxCombo, bull: this.maxBull, dur: Math.round(dur), caseSlips: this.caseSlips };
-    const before = levelInfo(S.xp);
-    const xp = Math.round(this.score / 10) + 15 + (acc === 1 ? 25 : acc >= 0.97 ? 10 : 0) + (this.mode === 'baseline' ? 30 : 0) + (this.mode === 'drill' ? 10 : 0);
-    S.xp += xp;
-    const after = levelInfo(S.xp);
+    const sess: Session = { id: this.sid, ts: Date.now(), mode: this.mode, focus: this.focus.map(focusCode).join(''), n, hits: this.good, acc, prec, wpm: Math.round(wpm * 10) / 10, combo: this.maxCombo, bull: this.maxBull, dur: Math.round(dur), caseSlips: this.caseSlips };
     const prevBest = S.bests.wpm, prevRounds = realSessions().length;
     commitTaps(this.taps);
     S.sessions.push(sess);
@@ -279,7 +271,7 @@ export class Round {
     S.bests.wpm = Math.max(S.bests.wpm, wpm);
     S.bests.combo = Math.max(S.bests.combo, this.maxCombo);
     save();
-    const result: RoundResult = { sess, xp, before, after, taps: this.taps.map(toObj), pbW, caseSlips: this.caseSlips, realigns: this.realigns, maxBull: this.maxBull };
+    const result: RoundResult = { sess, taps: this.taps.map(toObj), pbW, caseSlips: this.caseSlips, realigns: this.realigns, maxBull: this.maxBull };
     setTimeout(() => this.onFinish(result), 350);
   }
 }

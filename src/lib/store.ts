@@ -9,11 +9,11 @@ export interface Tap { sid: number; k: string; h: string; dx: number; dy: number
 export type Mode = 'baseline' | 'round' | 'drill';
 export interface Session {
   id: number; ts: number; mode: Mode; focus: string; n: number; hits: number; acc: number;
-  prec?: number; wpm?: number; score?: number; combo?: number; bull?: number; dur?: number; caseSlips?: number; partial?: boolean;
+  prec?: number; wpm?: number; combo?: number; bull?: number; dur?: number; caseSlips?: number; partial?: boolean;
 }
 export interface Settings { sound: boolean; haptics: boolean; dots: boolean; len: number }
 export interface State {
-  v: number; taps: TapRow[]; sessions: Session[]; xp: number;
+  v: number; taps: TapRow[]; sessions: Session[];
   streak: { last: string | null; count: number; best: number };
   daily: { day: string | null; rounds: number };
   used: number[]; bests: { wpm: number; combo: number };
@@ -25,12 +25,15 @@ export interface Dataset { taps: Tap[]; sessions: Session[]; sample: boolean }
 const STORE_KEY = 'deadcenter.v1';
 export const CHUNK = 2000, CAP = 40000;
 export function fresh(): State {
-  return { v: 1, taps: [], sessions: [], xp: 0, streak: { last: null, count: 0, best: 0 }, daily: { day: null, rounds: 0 }, used: [], bests: { wpm: 0, combo: 0 }, settings: { sound: true, haptics: true, dots: true, len: 3 }, tapBase: 0, rev: 0 };
+  return { v: 1, taps: [], sessions: [], streak: { last: null, count: 0, best: 0 }, daily: { day: null, rounds: 0 }, used: [], bests: { wpm: 0, combo: 0 }, settings: { sound: true, haptics: true, dots: true, len: 3 }, tapBase: 0, rev: 0 };
 }
 export function hydrate(raw: any): State {
   const f = fresh();
   const o = JSON.parse(JSON.stringify(raw || {}));
-  delete o.ach; // achievements were removed
+  // achievements, score and XP were removed
+  delete o.ach;
+  delete o.xp;
+  if (Array.isArray(o.sessions)) for (const s of o.sessions) delete s.score;
   return Object.assign(f, o, {
     taps: Array.isArray(o.taps) ? o.taps : [], sessions: Array.isArray(o.sessions) ? o.sessions : [],
     tapBase: o.tapBase || 0, rev: o.rev || 0,
@@ -163,7 +166,6 @@ function mergeStates(base: State, other: State) {
   const sids = new Set(extra.map((s) => s.id));
   base.sessions = [...base.sessions, ...extra].sort((a, b) => a.id - b.id);
   base.taps = [...base.taps, ...other.taps.filter((t) => sids.has(t[0]))].sort((a, b) => a[0] - b[0]);
-  base.xp = Math.max(base.xp, other.xp);
   base.bests = { wpm: Math.max(base.bests.wpm, other.bests.wpm), combo: Math.max(base.bests.combo, other.bests.combo) };
   if (other.streak.last && (!base.streak.last || other.streak.last > base.streak.last)) base.streak = other.streak;
   base.streak.best = Math.max(base.streak.best || 0, other.streak.best || 0);

@@ -120,7 +120,7 @@ function SettingsCard() {
         <button className="btn ghost" style={{ height: 40, fontSize: 14 }} onClick={restore}>Restore from backup</button>
       </div>
       <div className="set">
-        <div className="t"><b>Erase everything</b><span>All taps, rounds and XP</span></div>
+        <div className="t"><b>Erase everything</b><span>All taps and rounds</span></div>
         <button className="danger" onClick={erase}>{armed ? 'Tap again to erase' : 'Erase'}</button>
       </div>
     </section>
@@ -151,13 +151,12 @@ export function Progress() {
           <SectionH title="Recent rounds"><span className="eyebrow">{rs.length} total</span></SectionH>
           <section className="card" style={{ paddingBlock: 10 }}>
             <div className="rounds">
-              <div className="rrow rhead"><span>Round</span><span className="m">Acc</span><span className="m">WPM</span><span className="m">Score</span></div>
+              <div className="rrow rhead"><span>Round</span><span className="m">Acc</span><span className="m">WPM</span></div>
               {rs.slice(-5).reverse().map((s) => (
                 <div className="rrow" key={s.id}>
                   <span className="n"><b>{modeName(s)}</b><span>{relDate(s.ts)}</span></span>
                   <span className="m">{pct(s.acc)}%</span>
                   <span className="m">{Math.round(s.wpm || 0)}</span>
-                  <span className="m">{s.score}</span>
                 </div>
               ))}
             </div>
@@ -180,7 +179,7 @@ export function Progress() {
       </section>
       <SectionH title="Settings" id="settings" />
       <SettingsCard />
-      <p className="foot">Scores raw aim. The real iOS keyboard enlarges likely keys, so everyday typing is more forgiving.</p>
+      <p className="foot">Measures raw aim. The real iOS keyboard enlarges likely keys, so everyday typing is more forgiving.</p>
     </main>
   );
 }

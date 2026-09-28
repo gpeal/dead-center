@@ -3,7 +3,6 @@ import { Icon, Ring } from '../components/Icon';
 import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/common';
 import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
 import { heroAnim } from '../lib/draw';
-import { levelInfo } from '../lib/game';
 import { allTaps, realSessions, storageOK, store, syncState, useStore } from '../lib/store';
 import { COARSE, IN_FRAME, pct, today } from '../lib/util';
 
@@ -42,15 +41,15 @@ function Hero() {
 
 function Dashboard() {
   const { start, go, openKey } = useActions();
-  const S = store.S, lv = levelInfo(S.xp), rs = realSessions(), taps = allTaps();
+  const S = store.S, rs = realSessions(), taps = allTaps();
   const tk = troubleKeys(taps);
   const dr = S.daily.day === today() ? S.daily.rounds : 0, goal = 3;
   return (
     <>
       <section className="card level">
         <div className="rank">
-          <span className="eyebrow">Level {lv.lvl}</span>
-          <h1>{lv.rank}</h1>
+          <span className="eyebrow">Daily goal</span>
+          <h1>{dr >= goal ? 'Done for today' : `${goal - dr} round${goal - dr > 1 ? 's' : ''} to go`}</h1>
         </div>
         <div className="goal" aria-label={`${Math.min(dr, goal)} of ${goal} rounds today`}>
           <Ring v={dr / goal} color="var(--gold)" size={68} sw={7} />
@@ -59,13 +58,6 @@ function Dashboard() {
               <b>{Math.min(dr, goal)}/{goal}</b>
               <span>today</span>
             </div>
-          </div>
-        </div>
-        <div className="xpbar">
-          <div className="bar"><i style={{ width: pct(lv.into / lv.need) + '%' }} /></div>
-          <div className="xpmeta">
-            <span>{lv.into} / {lv.need} XP</span>
-            <span>{lv.need - lv.into} to level {lv.lvl + 1}</span>
           </div>
         </div>
       </section>
