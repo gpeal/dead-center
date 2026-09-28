@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Icon, Star } from '../components/Icon';
-import { Kc, type Tab } from '../components/common';
+import { useActions, useScheme, type Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
-import { troubleKeys } from '../lib/analysis';
-import { drawDots } from '../lib/draw';
+import { statsFor, troubleKeys } from '../lib/analysis';
+import { drawDots, drawScatter } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
 import { lab } from '../lib/keys';
@@ -40,8 +40,8 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
   const stars = +(acc >= 0.9) + +(acc >= 0.96) + +(acc >= 0.99 || (acc >= 0.975 && prec >= 0.6));
   const byKey: Record<string, Tap[]> = {};
   for (const t of taps) if (t.h !== t.k) (byKey[t.k] ||= []).push(t);
-  const missKeys = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length).slice(0, 2);
-  const [focus] = useState(() => (missKeys.length ? missKeys.slice(0, 2).map((m) => m[0]) : troubleKeys(allTaps()).slice(0, 2).map((t) => t.k)));
+  const missKeys = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length).slice(0, 3);
+  const [focus] = useState(() => (missKeys.length ? missKeys.map((m) => m[0]) : troubleKeys(allTaps()).slice(0, 2).map((t) => t.k)));
 
   const celebrated = useRef(false);
   useEffect(() => {
@@ -82,28 +82,19 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
             <div className={'tile' + (pbW ? ' best' : '')}><span className="eyebrow">{pbW ? 'Best WPM' : 'WPM'}</span><CountUp to={s.wpm || 0} /></div>
             <div className="tile"><span className="eyebrow">Combo</span><CountUp to={s.combo || 0} /></div>
           </div>
-          <section className="card mapcard">
-            <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
-            <div className="legend"><span className="dot" style={{ background: 'var(--green)' }} />hit <span className="dot" style={{ background: 'var(--red)' }} />miss <span>· {taps.length} taps</span></div>
-          </section>
-          <section className="card notes">
-            {missKeys.map(([k, arr]) => {
-              const hits: Record<string, number> = {};
-              arr.forEach((t) => (hits[t.h] = (hits[t.h] || 0) + 1));
-              const topH = Object.entries(hits).sort((a, b) => b[1] - a[1])[0];
-              const mx = arr.reduce((a, t) => a + t.dx, 0) / arr.length, my = arr.reduce((a, t) => a + t.dy, 0) / arr.length;
-              return (
-                <div className="note" key={k}>
-                  <Kc k={k} size="sm" />
-                  <span><b>{arr.length} miss{arr.length > 1 ? 'es' : ''}</b>, mostly onto {lab(topH[0])} <span className="muted">· {shortDir(mx, my)}</span></span>
-                </div>
-              );
-            })}
-            {slips && <div className="note"><span className="kc sm" aria-hidden="true">⇆</span><span className="muted">{slips}</span></div>}
-            {!missKeys.length && !result.caseSlips && (
-              <div className="note"><Star on size={24} /><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></div>
-            )}
-          </section>
+          {missKeys.length ? (
+            <section className="card misses">
+              {missKeys.map(([k, arr]) => <MissRow key={k} k={k} misses={arr} taps={taps} />)}
+              {slips && <p className="slips">{slips}</p>}
+            </section>
+          ) : (
+            <section className="card mapcard">
+              <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
+              <div className="legend">
+                {slips ? <span>{slips}</span> : <><Star on size={14} /> <span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
+              </div>
+            </section>
+          )}
           <div className="btnstack">
             <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />Next round</button>
             <div className="btnrow">
@@ -114,6 +105,32 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
         </div>
       </div>
     </div>
+  );
+}
+
+/** One missed key: this round's taps on it, zoomed in, with where the misses went. Tapping opens the key's full history. */
+function MissRow({ k, misses, taps }: { k: string; misses: Tap[]; taps: Tap[] }) {
+  const { openKey } = useActions();
+  const scheme = useScheme();
+  const cv = useRef<HTMLCanvasElement>(null);
+  const s = useMemo(() => statsFor(taps, k, 1000), [taps, k]);
+  useLayoutEffect(() => {
+    drawScatter(cv.current!, k, s, { reach: 1.2, padY: 12 });
+  }, [k, s, scheme]);
+  const onto: Record<string, number> = {};
+  misses.forEach((t) => (onto[t.h] = (onto[t.h] || 0) + 1));
+  const top = Object.entries(onto).sort((a, b) => b[1] - a[1])[0];
+  const mx = misses.reduce((a, t) => a + t.dx, 0) / misses.length, my = misses.reduce((a, t) => a + t.dy, 0) / misses.length;
+  return (
+    <button className="missrow" onClick={() => openKey(k)} aria-label={`${lab(k)}: ${misses.length} misses. Open details`}>
+      <canvas ref={cv} className="scatter" />
+      <span className="t">
+        <b>{lab(k)} · {misses.length} miss{misses.length > 1 ? 'es' : ''}</b>
+        <span>{top[1] === misses.length ? 'All' : 'Mostly'} onto {lab(top[0])}</span>
+        <span className="muted">Landed {shortDir(mx, my)}</span>
+      </span>
+      <Icon name="chev" />
+    </button>
   );
 }
 

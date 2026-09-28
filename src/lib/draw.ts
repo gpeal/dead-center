@@ -144,9 +144,10 @@ export function drawDots(cv: HTMLCanvasElement, kb: Kb, taps: Tap[]) {
   draw(true);
   c.globalAlpha = 1;
 }
-export function drawScatter(cv: HTMLCanvasElement, k: string, s: KeyStats) {
+/** Zoomed view of one key and its neighbors with each tap on it. `reach` is how many key widths to show on each side. */
+export function drawScatter(cv: HTMLCanvasElement, k: string, s: KeyStats, { reach = 1.55, padY = 22 } = {}) {
   const key = KEY[k], dpr = devicePixelRatio || 1, W = cv.clientWidth || 320;
-  const spanX = k === 'space' ? key.w / 2 + 30 : key.w / 2 + PITCH * 1.55, spanY = KH / 2 + 22, sc = W / (2 * spanX), H = Math.round(2 * spanY * sc);
+  const spanX = k === 'space' ? key.w / 2 + 30 : key.w / 2 + PITCH * reach, spanY = KH / 2 + padY, sc = W / (2 * spanX), H = Math.round(2 * spanY * sc);
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.height = H + 'px';
