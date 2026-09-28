@@ -3,7 +3,7 @@ import { Icon, Ring } from '../components/Icon';
 import { LineChart, SectionH, Topbar, useActions } from '../components/common';
 import { masteryLabel, statsFor, toneColor } from '../lib/analysis';
 import { buzz, toast } from '../lib/feedback';
-import { ACH, modeName } from '../lib/game';
+import { modeName } from '../lib/game';
 import { glyph, lab, TRAINABLE } from '../lib/keys';
 import { dataset, fresh, hydrate, replaceState, save, store, syncText, useStore, type Settings } from '../lib/store';
 import { pct, relDate } from '../lib/util';
@@ -178,15 +178,6 @@ export function Progress() {
           ))}
         </div>
       </section>
-      <SectionH title="Achievements"><span className="eyebrow">{Object.keys(store.S.ach).length} of {ACH.length}</span></SectionH>
-      <div className="ach">
-        {ACH.map((a) => (
-          <div key={a.id} className={'badge' + (store.S.ach[a.id] ? '' : ' locked')}>
-            <span className="ic"><Icon name={a.ic} /></span>
-            <div><b>{a.name}</b><span>{a.desc}</span></div>
-          </div>
-        ))}
-      </div>
       <SectionH title="Settings" id="settings" />
       <SettingsCard />
       <p className="foot">Scores raw aim. The real iOS keyboard enlarges likely keys, so everyday typing is more forgiving.</p>

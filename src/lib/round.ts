@@ -1,14 +1,14 @@
 import { KEY, edist, quality, focusCode, type KeyDef } from './keys';
 import { buzz, sound } from './feedback';
-import { checkAch, levelInfo, linesFor, type Achievement, type LevelInfo } from './game';
-import { commitTaps, emit, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
+import { levelInfo, linesFor, type LevelInfo } from './game';
+import { commitTaps, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
 import { dayDiff, today } from './util';
 import type { Point, ShiftState } from './keyboard';
 
 export type CharState = 'ok' | 'miss' | 'case' | 'fixed' | 'skip';
 export interface Hint { tone: 'ok' | 'warn' | 'bad'; label: string; text: string }
 export interface RoundResult {
-  sess: Session; xp: number; before: LevelInfo; after: LevelInfo; got: Achievement[]; taps: Tap[]; pbW: boolean;
+  sess: Session; xp: number; before: LevelInfo; after: LevelInfo; taps: Tap[]; pbW: boolean;
   caseSlips: number; realigns: number; maxBull: number;
 }
 interface Ev { hit: string; down: Point; dt: number; snap: Snap; pos: number; ok: boolean; keyOk: boolean }
@@ -278,10 +278,8 @@ export class Round {
     const pbW = prevRounds >= 2 && wpm > prevBest && acc >= 0.9;
     S.bests.wpm = Math.max(S.bests.wpm, wpm);
     S.bests.combo = Math.max(S.bests.combo, this.maxCombo);
-    emit(); // refresh derived taps before the achievement checks read them
-    const got = checkAch(sess);
     save();
-    const result: RoundResult = { sess, xp, before, after, got, taps: this.taps.map(toObj), pbW, caseSlips: this.caseSlips, realigns: this.realigns, maxBull: this.maxBull };
+    const result: RoundResult = { sess, xp, before, after, taps: this.taps.map(toObj), pbW, caseSlips: this.caseSlips, realigns: this.realigns, maxBull: this.maxBull };
     setTimeout(() => this.onFinish(result), 350);
   }
 }

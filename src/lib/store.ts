@@ -16,7 +16,7 @@ export interface State {
   v: number; taps: TapRow[]; sessions: Session[]; xp: number;
   streak: { last: string | null; count: number; best: number };
   daily: { day: string | null; rounds: number };
-  ach: Record<string, number>; used: number[]; bests: { wpm: number; combo: number };
+  used: number[]; bests: { wpm: number; combo: number };
   settings: Settings; tapBase: number; rev: number;
 }
 export interface Dataset { taps: Tap[]; sessions: Session[]; sample: boolean }
@@ -25,16 +25,17 @@ export interface Dataset { taps: Tap[]; sessions: Session[]; sample: boolean }
 const STORE_KEY = 'deadcenter.v1';
 export const CHUNK = 2000, CAP = 40000;
 export function fresh(): State {
-  return { v: 1, taps: [], sessions: [], xp: 0, streak: { last: null, count: 0, best: 0 }, daily: { day: null, rounds: 0 }, ach: {}, used: [], bests: { wpm: 0, combo: 0 }, settings: { sound: true, haptics: true, dots: true, len: 3 }, tapBase: 0, rev: 0 };
+  return { v: 1, taps: [], sessions: [], xp: 0, streak: { last: null, count: 0, best: 0 }, daily: { day: null, rounds: 0 }, used: [], bests: { wpm: 0, combo: 0 }, settings: { sound: true, haptics: true, dots: true, len: 3 }, tapBase: 0, rev: 0 };
 }
 export function hydrate(raw: any): State {
   const f = fresh();
   const o = JSON.parse(JSON.stringify(raw || {}));
+  delete o.ach; // achievements were removed
   return Object.assign(f, o, {
     taps: Array.isArray(o.taps) ? o.taps : [], sessions: Array.isArray(o.sessions) ? o.sessions : [],
     tapBase: o.tapBase || 0, rev: o.rev || 0,
     settings: Object.assign(f.settings, o.settings || {}), streak: Object.assign(f.streak, o.streak || {}),
-    bests: Object.assign(f.bests, o.bests || {}), daily: Object.assign(f.daily, o.daily || {}), ach: Object.assign({}, o.ach || {}),
+    bests: Object.assign(f.bests, o.bests || {}), daily: Object.assign(f.daily, o.daily || {}),
   });
 }
 export let storageOK = true;
@@ -163,7 +164,6 @@ function mergeStates(base: State, other: State) {
   base.sessions = [...base.sessions, ...extra].sort((a, b) => a.id - b.id);
   base.taps = [...base.taps, ...other.taps.filter((t) => sids.has(t[0]))].sort((a, b) => a[0] - b[0]);
   base.xp = Math.max(base.xp, other.xp);
-  base.ach = Object.assign({}, other.ach, base.ach);
   base.bests = { wpm: Math.max(base.bests.wpm, other.bests.wpm), combo: Math.max(base.bests.combo, other.bests.combo) };
   if (other.streak.last && (!base.streak.last || other.streak.last > base.streak.last)) base.streak = other.streak;
   base.streak.best = Math.max(base.streak.best || 0, other.streak.best || 0);

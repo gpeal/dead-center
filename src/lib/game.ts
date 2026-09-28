@@ -1,9 +1,8 @@
-import { KEY, TRAINABLE, LETTERS } from './keys';
+import { KEY, TRAINABLE } from './keys';
 import { PANGRAMS, SENTENCES, WORDS } from './text';
-import { statsFor, drillImpact } from './analysis';
+import { statsFor } from './analysis';
 import { shuffle, dayDiff, today } from './util';
-import { store, allTaps, realSessions, type Session, type Mode } from './store';
-import type { IconName } from '../components/Icon';
+import { store, allTaps, type Session, type Mode } from './store';
 
 /* ================= practice text ================= */
 function weights() {
@@ -77,52 +76,6 @@ export function levelInfo(xp: number): LevelInfo {
     need = Math.round(need * 1.12);
   }
   return { lvl, into: xp - base, need, rank: RANKS[Math.min(RANKS.length - 1, Math.floor((lvl - 1) / 3))] };
-}
-export interface Achievement { id: string; name: string; desc: string; ic: IconName }
-export const ACH: Achievement[] = [
-  { id: 'first', name: 'First contact', desc: 'Finish a round', ic: 'target' },
-  { id: 'baseline', name: 'Calibrated', desc: 'Finish the baseline', ic: 'ruler' },
-  { id: 'clean', name: 'Clean sheet', desc: 'Zero-miss round', ic: 'check' },
-  { id: 'bull10', name: 'Ten ring', desc: '10 bullseyes in a row', ic: 'cross' },
-  { id: 'combo50', name: 'Locked in', desc: '50-tap combo', ic: 'bolt' },
-  { id: 'streak3', name: 'Habit forming', desc: '3-day streak', ic: 'flame' },
-  { id: 'streak7', name: 'Full week', desc: '7-day streak', ic: 'flame' },
-  { id: 'drill5', name: 'Drill sergeant', desc: 'Finish 5 drills', ic: 'target' },
-  { id: 'fixer', name: 'Fixer', desc: 'Drilled key +10 pts', ic: 'wrench' },
-  { id: 'quick', name: 'Quick draw', desc: '40 WPM, 95% acc', ic: 'bolt' },
-  { id: 'k1', name: 'A thousand taps', desc: 'Log 1,000 taps', ic: 'kbd' },
-  { id: 'allkeys', name: 'Full board', desc: 'All letters 90%+', ic: 'grid' },
-];
-export function checkAch(sess: Session) {
-  const S = store.S, got: Achievement[] = [];
-  const give = (id: string) => {
-    if (!S.ach[id]) {
-      S.ach[id] = Date.now();
-      got.push(ACH.find((a) => a.id === id)!);
-    }
-  };
-  const rs = realSessions(), t = allTaps();
-  if (rs.length >= 1) give('first');
-  if (sess.mode === 'baseline') give('baseline');
-  if (sess.n >= 20 && sess.hits === sess.n) give('clean');
-  if ((sess.bull || 0) >= 10) give('bull10');
-  if ((sess.combo || 0) >= 50) give('combo50');
-  if (S.streak.count >= 3) give('streak3');
-  if (S.streak.count >= 7) give('streak7');
-  if (rs.filter((s) => s.mode === 'drill').length >= 5) give('drill5');
-  if ((sess.wpm || 0) >= 40 && sess.acc >= 0.95) give('quick');
-  if (S.taps.length >= 1000) give('k1');
-  if (!S.ach.fixer) {
-    for (const k of TRAINABLE) {
-      const d = drillImpact(t, rs, k);
-      if (d && d.after - d.before >= 0.1) {
-        give('fixer');
-        break;
-      }
-    }
-  }
-  if (!S.ach.allkeys && LETTERS.every((k) => { const s = statsFor(t, k, 60); return s.n >= 10 && s.acc >= 0.9; })) give('allkeys');
-  return got;
 }
 export const modeName = (s: Pick<Session, 'mode' | 'focus'>) =>
   s.mode === 'baseline' ? 'Baseline' : s.mode === 'drill' ? `Drill · ${(s.focus || '').split('').map((c) => (c === '_' ? 'Space' : c === '^' ? 'Shift' : c.toUpperCase())).join(' ')}` : 'Round';

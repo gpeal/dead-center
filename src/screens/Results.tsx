@@ -4,7 +4,7 @@ import { Kc, SectionH, type Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
 import { dirWords, troubleKeys } from '../lib/analysis';
 import { drawDots } from '../lib/draw';
-import { confetti, sound, toast } from '../lib/feedback';
+import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
 import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
@@ -34,7 +34,7 @@ function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
 }
 
 export function Results({ result, onStart, onClose }: { result: RoundResult; onStart: (mode: Mode, focus?: string[]) => void; onClose: (then: Tab) => void }) {
-  const { sess: s, xp, before, after, got, taps, pbW } = result;
+  const { sess: s, xp, before, after, taps, pbW } = result;
   const acc = s.acc, prec = s.prec || 0;
   const grade = acc >= 0.99 && prec >= 0.6 ? 'Dead center.' : acc >= 0.96 ? 'Sharp.' : acc >= 0.9 ? 'Solid.' : acc >= 0.8 ? 'Getting there.' : 'Wobbly.';
   const stars = +(acc >= 0.9) + +(acc >= 0.96) + +(acc >= 0.99 || (acc >= 0.975 && prec >= 0.6));
@@ -54,13 +54,12 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
     if (!celebrated.current) {
       celebrated.current = true;
       if (lvUp || s.hits === s.n || pbW) sound('chime');
-      got.forEach((a) => toast(a.ic, a.name, a.desc));
     }
     return () => {
       clearTimeout(t);
       clearTimeout(c);
     };
-  }, [after, got, lvUp, pbW, s]);
+  }, [after, lvUp, pbW, s]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawDots(cv, kb, taps);
@@ -125,14 +124,6 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
               <div className="note"><Star on size={34} /><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></div>
             )}
           </section>
-          {got.length > 0 && (
-            <>
-              <SectionH title="Unlocked" />
-              <div className="ach">
-                {got.map((a) => <div key={a.id} className="badge"><span className="ic"><Icon name={a.ic} /></span><div><b>{a.name}</b><span>{a.desc}</span></div></div>)}
-              </div>
-            </>
-          )}
           <div className="btnstack">
             <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />Next round</button>
             {focus.length > 0 && <button className="btn gold block" onClick={() => onStart('drill', focus)}><Icon name="target" />Drill {focus.map(lab).join(' and ')}</button>}
