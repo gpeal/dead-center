@@ -109,7 +109,6 @@ export function Practice({ round: r, onExit }: { round: Round; onExit: () => voi
             {!COARSE && !r.hint && !armedAt && <span className="muted"> (Mouse works, but thumbs are what this measures.)</span>}
           </div>
           <Line r={r} />
-          <div className="next">{r.lines[r.li + 1] || ''}</div>
         </div>
       </div>
       <KeyboardView live className="kbhost" paint={paint} onKey={r.onKey} />
