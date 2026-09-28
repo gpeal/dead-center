@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon, Star } from '../components/Icon';
-import { useActions, useScheme, type Tab } from '../components/common';
+import type { Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
+import { MissMap } from '../components/MissMap';
 import { UpdateBanner } from '../components/Toasts';
-import { statsFor, troubleKeys } from '../lib/analysis';
-import { drawDots, drawMissKeys, drawScatter } from '../lib/draw';
+import { troubleKeys } from '../lib/analysis';
+import { drawDots } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
 import { lab } from '../lib/keys';
@@ -57,10 +58,6 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
       clearTimeout(c);
     };
   }, [pbW, s]);
-  const paintMisses = useCallback((kb: Kb) => {
-    const cv = kb.el.parentElement?.querySelector('canvas');
-    if (cv) drawMissKeys(cv, kb, taps, missKeys.map((m) => m[0]));
-  }, [taps]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawDots(cv, kb, taps);
@@ -89,8 +86,7 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
           </div>
           {missKeys.length ? (
             <section className="card misses">
-              <KeyboardView className="mapwrap" paint={paintMisses}><canvas /></KeyboardView>
-              {missKeys.map(([k, arr]) => <MissRow key={k} k={k} misses={arr} taps={taps} />)}
+              <MissMap keys={missKeys} taps={taps} />
               {slips && <p className="slips">{slips}</p>}
             </section>
           ) : (
@@ -113,38 +109,4 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
       </div>
     </div>
   );
-}
-
-/** One missed key: this round's taps on it, zoomed in, with where the misses went. Tapping opens the key's full history. */
-function MissRow({ k, misses, taps }: { k: string; misses: Tap[]; taps: Tap[] }) {
-  const { openKey } = useActions();
-  const scheme = useScheme();
-  const cv = useRef<HTMLCanvasElement>(null);
-  const s = useMemo(() => statsFor(taps, k, 1000), [taps, k]);
-  useLayoutEffect(() => {
-    drawScatter(cv.current!, k, s, { reach: 1.2, padY: 8 });
-  }, [k, s, scheme]);
-  const onto: Record<string, number> = {};
-  misses.forEach((t) => (onto[t.h] = (onto[t.h] || 0) + 1));
-  const top = Object.entries(onto).sort((a, b) => b[1] - a[1])[0];
-  const mx = misses.reduce((a, t) => a + t.dx, 0) / misses.length, my = misses.reduce((a, t) => a + t.dy, 0) / misses.length;
-  return (
-    <button className="missrow" onClick={() => openKey(k)} aria-label={`${lab(k)}: ${misses.length} misses. Open details`}>
-      <canvas ref={cv} className="scatter" />
-      <span className="t">
-        <b>{lab(k)} · {misses.length} miss{misses.length > 1 ? 'es' : ''}</b>
-        <span>{top[1] === misses.length ? 'All' : 'Mostly'} onto {lab(top[0])}</span>
-        <span className="muted">Landed {shortDir(mx, my)}</span>
-      </span>
-      <Icon name="chev" />
-    </button>
-  );
-}
-
-// "low left", "high", or "centered": the average direction of the misses
-function shortDir(dx: number, dy: number) {
-  const p: string[] = [];
-  if (Math.abs(dy) >= 0.8) p.push(dy > 0 ? 'low' : 'high');
-  if (Math.abs(dx) >= 0.8) p.push(dx > 0 ? 'right' : 'left');
-  return p.length ? p.join(' ') : 'centered';
 }

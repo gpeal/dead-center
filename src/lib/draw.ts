@@ -160,21 +160,100 @@ export function drawMissKeys(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], keys: s
     e.style.background = 'color-mix(in srgb, var(--red) 28%, var(--kb-key))';
     e.style.boxShadow = 'inset 0 0 0 2px var(--red)';
   }
-  for (const t of taps) {
-    if (t.h === t.k || !keys.includes(t.k)) continue;
-    const key = KEY[t.k], p = kb.toPx(key.cx + t.dx, key.cy + t.dy);
+  const green = cssVar('--green');
+  for (const miss of [false, true])
+    for (const t of taps) {
+      if ((t.h !== t.k) !== miss || !keys.includes(t.k)) continue;
+      const key = KEY[t.k], p = kb.toPx(key.cx + t.dx, key.cy + t.dy);
+      c.beginPath();
+      c.arc(p.x, p.y, miss ? 3.4 : 2.4, 0, 7);
+      c.globalAlpha = miss ? 1 : 0.6;
+      c.fillStyle = miss ? red : green;
+      c.fill();
+      if (miss) {
+        c.strokeStyle = edge;
+        c.lineWidth = 1;
+        c.stroke();
+      }
+    }
+  c.globalAlpha = 1;
+}
+
+export interface Loupe { k: string; x: number; label: string }
+/**
+ * Magnifiers above the keyboard: one circle per key, centered over it where there is room, with a leader line
+ * down to the key. `stripH` is the height of the band above the keyboard; the keyboard starts right below it.
+ */
+export function drawLoupes(cv: HTMLCanvasElement, kb: Kb, loupes: Loupe[], statsOf: (k: string) => KeyStats, D: number, stripH: number) {
+  const dpr = devicePixelRatio || 1, W = kb.el.clientWidth, H = stripH + kb.el.clientHeight;
+  cv.width = W * dpr;
+  cv.height = H * dpr;
+  cv.style.width = W + 'px';
+  cv.style.height = H + 'px';
+  const c = cv.getContext('2d')!;
+  c.scale(dpr, dpr);
+  const red = cssVar('--red'), ink = cssVar('--ink'), surface = cssVar('--surface');
+  const cy = D / 2 + 2;
+  for (const l of loupes) {
+    const key = KEY[l.k], top = kb.toPx(key.cx, key.y);
+    // leader line from the loupe to the top of its key
+    c.strokeStyle = red;
+    c.globalAlpha = 0.45;
+    c.lineWidth = 1.25;
     c.beginPath();
-    c.arc(p.x, p.y, 3.4, 0, 7);
-    c.fillStyle = red;
-    c.fill();
-    c.strokeStyle = edge;
-    c.lineWidth = 1;
+    c.moveTo(l.x, cy + D / 2);
+    c.lineTo(top.x, stripH + top.y);
+    c.stroke();
+    c.globalAlpha = 1;
+    const off = document.createElement('canvas');
+    drawScatter(off, l.k, statsOf(l.k), { reach: 0.72, width: D, square: true });
+    c.save();
+    c.beginPath();
+    c.arc(l.x, cy, D / 2, 0, 7);
+    c.clip();
+    c.drawImage(off, l.x - D / 2, cy - D / 2, D, D);
+    c.restore();
+    c.lineWidth = 2;
+    c.strokeStyle = red;
+    c.beginPath();
+    c.arc(l.x, cy, D / 2, 0, 7);
+    c.stroke();
+    c.lineWidth = 3;
+    c.strokeStyle = surface;
+    c.beginPath();
+    c.arc(l.x, cy, D / 2 + 2.5, 0, 7);
     c.stroke();
   }
+  // labels go on top, with a backing so leader lines never run through the text
+  c.font = `600 11.5px ${cssVar('--f-mono')}`;
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  for (const l of loupes) {
+    const y = D + 14, tw = c.measureText(l.label).width + 10;
+    c.fillStyle = surface;
+    c.fillRect(l.x - tw / 2, y - 8, tw, 16);
+    c.fillStyle = ink;
+    c.fillText(l.label, l.x, y);
+  }
 }
-export function drawScatter(cv: HTMLCanvasElement, k: string, s: KeyStats, { reach = 1.55, padY = 22 } = {}) {
-  const key = KEY[k], dpr = devicePixelRatio || 1, W = cv.clientWidth || 320;
-  const spanX = k === 'space' ? key.w / 2 + 30 : key.w / 2 + PITCH * reach, spanY = KH / 2 + padY, sc = W / (2 * spanX), H = Math.round(2 * spanY * sc);
+
+/** Centers of up to three loupes: as close to their keys as possible without overlapping or leaving the card. */
+export function placeLoupes(xs: number[], D: number, W: number, gap = 10) {
+  const order = xs.map((x, i) => ({ x, i })).sort((a, b) => a.x - b.x);
+  const lo = D / 2, hi = W - D / 2;
+  const pos = order.map((o) => Math.min(hi, Math.max(lo, o.x)));
+  for (let i = 1; i < pos.length; i++) pos[i] = Math.max(pos[i], pos[i - 1] + D + gap);
+  for (let i = pos.length - 1; i >= 0; i--) {
+    pos[i] = Math.min(pos[i], i === pos.length - 1 ? hi : pos[i + 1] - D - gap);
+    pos[i] = Math.max(pos[i], lo);
+  }
+  const out: number[] = [];
+  order.forEach((o, j) => (out[o.i] = pos[j]));
+  return out;
+}
+export function drawScatter(cv: HTMLCanvasElement, k: string, s: KeyStats, { reach = 1.55, padY = 22, width = 0, square = false } = {}) {
+  const key = KEY[k], dpr = devicePixelRatio || 1, W = width || cv.clientWidth || 320;
+  const spanX = k === 'space' ? key.w / 2 + 30 : key.w / 2 + PITCH * reach, spanY = square ? spanX : KH / 2 + padY, sc = W / (2 * spanX), H = Math.round(2 * spanY * sc);
   cv.width = W * dpr;
   cv.height = H * dpr;
   cv.style.height = H + 'px';
