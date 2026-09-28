@@ -25,10 +25,10 @@ export function Toasts() {
   );
 }
 
-export function UpdateBanner() {
+export function UpdateBanner({ inline = false }: { inline?: boolean }) {
   if (!useUpdateReady()) return null;
   return (
-    <div className="updbar" role="status">
+    <div className={'updbar' + (inline ? ' inline' : '')} role="status">
       <span>New version ready</span>
       <button className="btn primary" onClick={() => location.reload()}>Reload</button>
     </div>

@@ -350,7 +350,9 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .updbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:16px;background:var(--ink);color:var(--bg);box-shadow:0 12px 30px rgba(0,0,0,.3);font-weight:600;font-size:14px;white-space:nowrap;animation:updIn .45s cubic-bezier(.2,1.4,.4,1)}
 @keyframes updIn{from{opacity:0;transform:translate(-50%,20px) scale(.95)}}
 .updbar .btn{height:34px;padding-inline:14px;font-size:14px;border-radius:11px;box-shadow:none}
-body:has(.practice,#results) .updbar{display:none}
+/* the floating banner hides while typing and on results; results shows it inline under its buttons instead */
+body:has(.practice,#results) .updbar:not(.inline){display:none}
+.updbar.inline{position:static;transform:none;align-self:center;animation:fadeIn .3s}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 
 @media (prefers-reduced-motion: reduce){

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { Icon, Star } from '../components/Icon';
 import { useActions, useScheme, type Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
+import { UpdateBanner } from '../components/Toasts';
 import { statsFor, troubleKeys } from '../lib/analysis';
 import { drawDots, drawScatter } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
@@ -101,6 +102,7 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
               {focus.length > 0 && <button className="btn gold" onClick={() => onStart('drill', focus)}><Icon name="target" />Drill {focus.map(lab).join(' ')}</button>}
               <button className="btn ghost" onClick={() => onClose('map')}>Tap map</button>
             </div>
+            <UpdateBanner inline />
           </div>
         </div>
       </div>
