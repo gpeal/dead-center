@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react';
-import { Icon, Ring } from '../components/Icon';
+import { Icon } from '../components/Icon';
 import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/common';
 import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
 import { heroAnim } from '../lib/draw';
 import { allTaps, realSessions, storageOK, store, syncState, useStore } from '../lib/store';
-import { COARSE, IN_FRAME, pct, today } from '../lib/util';
+import { COARSE, IN_FRAME, pct } from '../lib/util';
 
 function Hero() {
   const { start, go } = useActions();
@@ -43,24 +43,8 @@ function Dashboard() {
   const { start, go, openKey } = useActions();
   const S = store.S, rs = realSessions(), taps = allTaps();
   const tk = troubleKeys(taps);
-  const dr = S.daily.day === today() ? S.daily.rounds : 0, goal = 3;
   return (
     <>
-      <section className="card level">
-        <div className="rank">
-          <span className="eyebrow">Daily goal</span>
-          <h1>{dr >= goal ? 'Done for today' : `${goal - dr} round${goal - dr > 1 ? 's' : ''} to go`}</h1>
-        </div>
-        <div className="goal" aria-label={`${Math.min(dr, goal)} of ${goal} rounds today`}>
-          <Ring v={dr / goal} color="var(--gold)" size={68} sw={7} />
-          <div className="lbl">
-            <div>
-              <b>{Math.min(dr, goal)}/{goal}</b>
-              <span>today</span>
-            </div>
-          </div>
-        </div>
-      </section>
       <section className="play">
         <button className="btn primary block" onClick={() => start('round')}>
           <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>

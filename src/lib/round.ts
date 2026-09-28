@@ -265,8 +265,6 @@ export class Round {
       S.streak.last = d;
       S.streak.best = Math.max(S.streak.best, S.streak.count);
     }
-    if (S.daily.day !== d) S.daily = { day: d, rounds: 0 };
-    S.daily.rounds++;
     const pbW = prevRounds >= 2 && wpm > prevBest && acc >= 0.9;
     S.bests.wpm = Math.max(S.bests.wpm, wpm);
     S.bests.combo = Math.max(S.bests.combo, this.maxCombo);

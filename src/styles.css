@@ -80,14 +80,6 @@ p{margin:0}
 .linkbtn{color:var(--accent);font-weight:600}
 
 /* ---------- level card ---------- */
-.level{display:grid;grid-template-columns:1fr auto;gap:14px 16px;align-items:center}
-.level .rank{display:flex;flex-direction:column;gap:6px;min-width:0}
-.level .rank h1{font:800 26px/1.05 var(--f-display);font-variation-settings:"wdth" 122;letter-spacing:-.015em}
-.goal{position:relative;width:68px;height:68px}
-.goal svg{width:100%;height:100%;transform:rotate(-90deg)}
-.goal .lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;line-height:1}
-.goal .lbl b{font:800 18px/1 var(--f-display);font-variation-settings:"wdth" 120}
-.goal .lbl span{display:block;font:500 8.5px/1 var(--f-mono);letter-spacing:.06em;color:var(--muted);margin-top:3px;text-transform:uppercase}
 
 /* ---------- hero (first run) ---------- */
 .hero{display:flex;flex-direction:column;gap:12px;padding:18px 18px 16px;overflow:hidden;position:relative}
