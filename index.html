@@ -373,6 +373,10 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,-20px) scale(.95)}}
 #confetti{position:fixed;inset:0;z-index:95;pointer-events:none;width:100%;height:100%}
 .hapt{position:fixed;left:-200px;top:0;opacity:0;pointer-events:none}
+.updbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:16px;background:var(--ink);color:var(--bg);box-shadow:0 12px 30px rgba(0,0,0,.3);font-weight:600;font-size:14px;white-space:nowrap;animation:updIn .45s cubic-bezier(.2,1.4,.4,1)}
+@keyframes updIn{from{opacity:0;transform:translate(-50%,20px) scale(.95)}}
+.updbar .btn{height:34px;padding-inline:14px;font-size:14px;border-radius:11px;box-shadow:none}
+body:has(.practice,#results) .updbar{display:none}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 
 @media (prefers-reduced-motion: reduce){
@@ -1488,7 +1492,24 @@ function boot(){
   new MutationObserver(()=>{if(view==='map')paintMap()}).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
   const hash=(location.hash||'').slice(1);show(['map','progress'].includes(hash)?hash:'home');
   cloudInit();setTimeout(()=>{if(SYNC.state==='loading'){SYNC.state='off';rerender()}},9000);
-  if(!IN_FRAME&&'serviceWorker' in navigator&&/^https?:/.test(location.protocol)){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+  if(!IN_FRAME&&'serviceWorker' in navigator&&/^https?:/.test(location.protocol))watchUpdates();
+}
+/* ================= update banner ================= */
+function watchUpdates(){
+  const sw=navigator.serviceWorker,hadCtl=!!sw.controller;let last=Date.now();
+  sw.addEventListener('message',e=>{if(e.data&&e.data.type==='update-ready')showUpdate()});
+  sw.addEventListener('controllerchange',()=>{if(hadCtl)showUpdate()}); // a new service worker took over
+  sw.register('sw.js').then(reg=>{
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState!=='visible'||Date.now()-last<60e3)return;last=Date.now();
+      reg.update().catch(()=>{});if(sw.controller)sw.controller.postMessage({type:'check'});
+    });
+  }).catch(()=>{});
+}
+function showUpdate(){
+  if($('.updbar'))return;const b=document.createElement('div');b.className='updbar';b.setAttribute('role','status');
+  b.innerHTML=`<span>New version ready</span><button class="btn primary">Reload</button>`;
+  $('button',b).addEventListener('click',()=>location.reload());document.body.appendChild(b);
 }
 boot();
 })();

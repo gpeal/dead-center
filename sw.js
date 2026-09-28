@@ -15,10 +15,28 @@ self.addEventListener('fetch',e=>{
     const net=refresh(new Request('./index.html'),'./index.html');
     e.waitUntil(net.catch(()=>{}));
     const fresh=net.then(r=>r.ok?r:cached().then(c=>c||r),()=>cached());
-    const late=new Promise(res=>setTimeout(res,NAV_TIMEOUT)).then(cached);
-    e.respondWith(Promise.race([fresh,late]).then(r=>r||fresh));
+    const late=new Promise(res=>setTimeout(res,NAV_TIMEOUT)).then(cached).then(r=>r&&{r,stale:true});
+    e.respondWith(Promise.race([fresh.then(r=>({r})),late]).then(x=>{
+      // served the saved copy because the network was slow: if the page that arrives later differs, offer a reload
+      if(x&&x.stale){const was=x.r.clone().text();e.waitUntil(Promise.all([was,net]).then(async([o,n])=>{if(n.ok&&await n.clone().text()!==o)await notify(e.resultingClientId)}).catch(()=>{}))}
+      return(x&&x.r)||fresh;
+    }));
     return;
   }
   const net=refresh(req);e.waitUntil(net.catch(()=>{}));
   e.respondWith(caches.match(req).then(hit=>hit||net));
 });
+// the page asks for a check when it returns to the foreground, since iOS resumes a home screen app without reloading it
+self.addEventListener('message',e=>{
+  if(!e.data||e.data.type!=='check')return;
+  e.waitUntil(pageChanged().then(ch=>{if(ch&&e.source)e.source.postMessage({type:'update-ready'})}).catch(()=>{}));
+});
+async function pageChanged(){
+  const c=await caches.open(CACHE),old=await c.match('./index.html');
+  const r=await fetch('./index.html',{cache:'no-cache'});if(!r.ok)return false;
+  const txt=await r.clone().text();await c.put('./index.html',r);
+  return!!old&&txt!==await old.text();
+}
+async function notify(id){
+  for(let i=0;i<10;i++){const c=id&&await self.clients.get(id);if(c){c.postMessage({type:'update-ready'});return}await new Promise(r=>setTimeout(r,500))}
+}
