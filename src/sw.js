@@ -1,8 +1,9 @@
 // Offline strategy: each launch asks the server for the latest page (skipping the browser's HTTP cache, which
 // GitHub Pages sets to 10 minutes), but falls back to the cached copy after a short wait, so a stalled
 // connection (plane or hotel Wi-Fi) never blocks launch. Other assets open from the cache and refresh in the background.
-const CACHE='dead-center-v4';
-const CORE=['./','./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png','./icons/apple-touch-icon.png'];
+// The cache version and precache list are filled in at build time (see vite.config.ts)
+const CACHE='dead-center-__VERSION__';
+const CORE=__PRECACHE__;
 const NAV_TIMEOUT=2500;
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(CORE.map(u=>new Request(u,{cache:'reload'})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()))});

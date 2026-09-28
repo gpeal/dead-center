@@ -1,0 +1,45 @@
+import { useLayoutEffect, useRef, useState } from 'react';
+import { Icon, type IconName } from './Icon';
+import type { Tab } from './common';
+
+const TABS: { id: Tab; label: string; icon: IconName }[] = [
+  { id: 'home', label: 'Today', icon: 'target' },
+  { id: 'map', label: 'Map', icon: 'kbd' },
+  { id: 'progress', label: 'Progress', icon: 'chart' },
+];
+// must match .tab padding, icon size and gap, and .tabbar .in gap in styles.css
+const PAD = 14, ICON = 20, GAP = 7, SEP = 4;
+
+/**
+ * Every tab gets an explicit width (icon only, or icon plus label for the current one), and the highlight's
+ * position is the sum of the widths before it. Both animate on the same curve, so the highlight tracks the
+ * tabs exactly while the old label folds away and the new one opens.
+ */
+export function TabBar({ tab, onGo }: { tab: Tab; onGo: (t: Tab) => void }) {
+  const labels = useRef<(HTMLSpanElement | null)[]>([]);
+  const [lw, setLw] = useState<number[] | null>(null);
+  useLayoutEffect(() => {
+    const measure = () => setLw(labels.current.map((e) => (e ? Math.ceil(e.getBoundingClientRect().width) : 0)));
+    measure();
+    document.fonts?.ready.then(measure);
+  }, []);
+  const ai = TABS.findIndex((t) => t.id === tab);
+  const widths = TABS.map((_, i) => PAD * 2 + ICON + (lw && i === ai ? GAP + lw[i] : 0));
+  const x = widths.slice(0, ai).reduce((a, w) => a + w + SEP, 0);
+  return (
+    <nav className={'tabbar' + (lw ? ' ready' : '')} aria-label="Sections">
+      <div className="in">
+        {lw && <span className="tab-ind" aria-hidden="true" style={{ width: widths[ai], transform: `translateX(${x}px)` }} />}
+        {TABS.map((t, i) => (
+          <button key={t.id} className="tab" aria-label={t.label} aria-current={t.id === tab ? 'page' : 'false'} style={lw ? { width: widths[i] } : undefined} onClick={() => onGo(t.id)}>
+            <Icon name={t.icon} />
+            <span className="l">{t.label}</span>
+          </button>
+        ))}
+        <span className="tab-measure" aria-hidden="true">
+          {TABS.map((t, i) => <span key={t.id} ref={(e) => { labels.current[i] = e; }}>{t.label}</span>)}
+        </span>
+      </div>
+    </nav>
+  );
+}

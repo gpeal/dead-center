@@ -1,10 +1,26 @@
-# Dead Center (installable build)
+# Dead Center
 
-Static files. Host this folder anywhere that serves HTTPS (GitHub Pages, Netlify, Vercel, Cloudflare Pages, or any static host).
+Train your iPhone typing accuracy, one key at a time. Dead Center records where every tap lands on a true-size iPhone keyboard, finds the keys you miss and why, and builds drills to fix them.
 
-1. Upload the whole folder as-is.
-2. Open the URL in Safari on your iPhone.
-3. Tap Share, then Add to Home Screen.
+Live at https://gpeal.github.io/dead-center/
 
-It launches full screen, works offline after the first visit (a service worker caches the app), and keeps your progress in the browser's local storage on that device.
-Use Progress > Backup to copy your data between the web version and the installed app.
+## Install on iPhone
+
+1. Open the link in Safari.
+2. Tap Share, then Add to Home Screen.
+
+It launches full screen, works offline after the first visit, and keeps your progress in the browser's local storage on that device. Use Progress > Backup to move your data between browsers. When a new version is deployed, the app shows a "New version ready" banner.
+
+## Development
+
+```sh
+npm install
+npm run dev      # local dev server
+npm run build    # type-check and build to dist/
+```
+
+Built with React 19 and TypeScript on Vite. The three tabs are kept mounted with `<Activity>`, so each keeps its state and scroll position while hidden. Pushing to `main` builds and deploys to GitHub Pages through `.github/workflows/deploy.yml`.
+
+- `src/lib/`: keyboard geometry, tap analysis, the practice engine (`round.ts`), storage and sync, canvas drawing
+- `src/screens/`, `src/components/`: the React UI
+- `src/sw.js`: service worker template; the build fills in the precache list (see `vite.config.ts`)
