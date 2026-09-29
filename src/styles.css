@@ -368,6 +368,14 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 /* the floating banner hides while typing and on results; results shows it inline under its buttons instead */
 body:has(.practice,#results) .updbar:not(.inline){display:none}
 .updbar.inline{position:static;transform:none;align-self:center;animation:fadeIn .3s}
+.install{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:start;padding:14px 8px 14px 14px;background:var(--accent-soft);box-shadow:none}
+.install .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
+.install .ic svg{width:20px;height:20px}
+.install b{display:block;font-weight:700;font-size:15px}
+.install span{display:block;font-size:13px;line-height:1.35;color:var(--ink-2);margin-top:3px}
+.install .note{color:var(--muted);margin-top:6px}
+.install .x{width:30px;height:30px;margin-top:-4px;color:var(--muted)}
+.install .x svg{width:16px;height:16px}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}

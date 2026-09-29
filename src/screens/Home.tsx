@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/common';
 import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
@@ -87,9 +87,6 @@ function Dashboard() {
       ) : (
         <div className="card small muted">{taps.length < 150 ? 'A couple more rounds and your weakest keys show up here.' : 'Every key is above 97%. Rounds keep testing the harder ones.'}</div>
       )}
-      {!IN_FRAME && /iPhone|iPad/.test(navigator.userAgent) && !(navigator as { standalone?: boolean }).standalone && (
-        <div className="card small"><b>Install it:</b> <span className="muted">Share, then Add to Home Screen.</span></div>
-      )}
     </>
   );
 }
@@ -100,6 +97,7 @@ export function Home() {
   return (
     <main className="screen">
       <Topbar />
+      <InstallCard hasRounds={rs.length > 0} />
       {!storageOK && <div className="warnbar">This browser is blocking storage, so progress will reset when you close the page.</div>}
       {!rs.length && syncState() === 'loading' ? (
         <section className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -119,4 +117,42 @@ export function Home() {
 function listKeys(keys: string[]) {
   const l = keys.map(lab);
   return l.length > 1 ? `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}` : l[0];
+}
+
+/* ---------- Add to Home Screen ----------
+   iOS can tell a page whether it is running from the Home Screen, but not whether it has been added there, and it has
+   no install prompt a page can trigger. So in Safari (never inside the installed app) this explains the two steps,
+   and, since Safari and the installed app keep separate storage, how to bring rounds across. */
+const INSTALL_KEY = 'dc.installDismissed';
+const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
+const isStandalone = () => !!(navigator as { standalone?: boolean }).standalone || matchMedia('(display-mode: standalone)').matches;
+function wasDismissed() {
+  try {
+    return localStorage.getItem(INSTALL_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+function InstallCard({ hasRounds }: { hasRounds: boolean }) {
+  const [hidden, setHidden] = useState(() => IN_FRAME || !isIOS() || isStandalone() || wasDismissed());
+  if (hidden) return null;
+  const dismiss = () => {
+    try {
+      localStorage.setItem(INSTALL_KEY, '1');
+    } catch {
+      /* ignore */
+    }
+    setHidden(true);
+  };
+  return (
+    <section className="card install">
+      <span className="ic"><Icon name="share" /></span>
+      <div>
+        <b>Add it to your Home Screen</b>
+        <span>Tap Share (under •••), then Add to Home Screen, for full screen and offline use.</span>
+        {hasRounds && <span className="note">Rounds typed in Safari stay here: move them with Progress › Backup, then Restore in the app.</span>}
+      </div>
+      <button className="iconbtn x" aria-label="Dismiss" onClick={dismiss}><Icon name="close" /></button>
+    </section>
+  );
 }
