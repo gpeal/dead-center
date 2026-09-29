@@ -105,7 +105,11 @@ export function diagnose(s: KeyStats): Diagnosis {
     if (HANDOFF.has(k) && top && ((LEFT.has(k) && RIGHT.has(top[0])) || (RIGHT.has(k) && LEFT.has(top[0])))) { why.push(`${L} sits between your thumbs, so misses often come from switching thumbs mid-word.`); fixes.push('Give each middle key one thumb: T, G, V, B left; Y, H, N right.'); }
   }
   if (!sigX && !sigY && spread > 0.42) { why.push(`Your average is near center, but taps spread ±${fmt1(Math.max(s.sdx, s.sdy))} pt. It's consistency, not aim.`); fixes.push(`Drill ${L} at about 80% of your usual speed.`); fixes.push('Keep your thumbs hovering close to the glass.'); }
-  if (rushing) { why.push(`Misses came ${Math.round(median(s.dtM))} ms after the previous tap vs ${Math.round(median(s.dtH))} ms on hits. You're rushing ${L}.`); fixes.push(`Take a half beat before ${L}.`); }
+  if (rushing) {
+    why.push(`Misses came ${Math.round(median(s.dtM))} ms after the previous tap vs ${Math.round(median(s.dtH))} ms on hits. You're rushing ${L}.`);
+    const fix = transitionFix(k, s.arr.filter((t) => t.h !== k));
+    if (fix) fixes.push(fix);
+  }
   if (trans) { const p = trans[0], pl = p === '_' ? 'space' : lab(p); why.push(`Most misses come right after ${pl} (${trans[1].m} of ${trans[1].n} times).`); fixes.push(`Practice the ${pl} to ${L} jump on its own.`); }
   if (!why.length) why.push(s.acc >= 0.95 ? `${pct(s.acc)}% clean, ${pct(s.prec)}% centered. Nothing to fix.` : 'No clear pattern yet. This usually settles after a few rounds.');
   if (!fixes.length) fixes.push(`Keep ${L} in rotation.`);
@@ -154,6 +158,24 @@ export function patterns(taps: Tap[]): Pattern[] {
 }
 
 /**
+ * A concrete thumb motion for misses that happen on the way into a key from one particular letter, or null when
+ * the misses don't share a previous letter.
+ */
+export function transitionFix(k: string, misses: Tap[]): string | null {
+  const prev: Record<string, number> = {};
+  for (const t of misses) if (t.p) prev[t.p] = (prev[t.p] || 0) + 1;
+  const top = Object.entries(prev).sort((a, b) => b[1] - a[1])[0];
+  if (!top || top[1] < Math.max(2, misses.length / 2)) return null;
+  const L = lab(k), p = top[0] === '_' ? 'space' : top[0], P = p === 'space' ? 'space' : lab(p);
+  if (p === 'space') return `After space, lift your thumb off the bar before your thumb comes down on ${L}.`;
+  const side = (x: string) => (LEFT.has(x) ? 'left' : RIGHT.has(x) ? 'right' : null);
+  const a = side(p), b = side(k);
+  if (a && b && a !== b) return `When ${L} follows ${P}, lift your ${a} thumb off ${P} before your ${b} thumb comes down on ${L}.`;
+  if (p === k) return `On double ${L}s, let your thumb come fully up between the two taps.`;
+  return `After ${P}, move your thumb all the way over to ${L} before you press, not while you press.`;
+}
+
+/**
  * One thing to do differently with your thumb next round, based on this round's taps. Always returns a tip: it
  * starts from the most-missed key's pattern, and falls back to centering or pace when there is nothing to fix.
  */
@@ -165,11 +187,17 @@ export function thumbTip(taps: Tap[], caseSlips: number, prec: number): string {
   if (top && top[1].length >= 2) {
     const [k, misses] = top, L = lab(k), key = KEY[k];
     const mx = misses.reduce((a, t) => a + t.dx, 0) / misses.length, my = misses.reduce((a, t) => a + t.dy, 0) / misses.length;
-    const hitDt = taps.filter((t) => t.h === t.k && t.dt > 0 && t.dt < 2500).map((t) => t.dt), missDt = misses.filter((t) => t.dt > 0 && t.dt < 2500).map((t) => t.dt);
+    // rushing: this key's misses came clearly faster than its own hits (timing depends on the letter before, so
+    // comparing against other keys would mostly measure that)
+    const okDt = (t: Tap) => t.dt > 0 && t.dt < 2500;
+    const hitDt = taps.filter((t) => t.k === k && t.h === k && okDt(t)).map((t) => t.dt), missDt = misses.filter(okDt).map((t) => t.dt);
     const onto = Object.entries(misses.reduce<Record<string, number>>((a, t) => ((a[t.h] = (a[t.h] || 0) + 1), a), {})).sort((a, b) => b[1] - a[1])[0][0];
     if (k === 'space') return my < 0 ? 'Tap space low, near its bottom edge, so your thumb stays clear of the letters above it.' : 'Finish each word, then give space a short, light tap instead of a reach.';
     if (k === 'shift') return 'Reach all the way to Shift with a flatter thumb so the pad, not the tip, lands on it.';
-    if (missDt.length >= 2 && hitDt.length >= 10 && median(missDt) < 0.8 * median(hitDt)) return `Take a half beat before ${L}: let your thumb land fully, then move on.`;
+    if (missDt.length >= 3 && hitDt.length >= 3 && median(missDt) < 0.8 * median(hitDt)) {
+      const fix = transitionFix(k, misses);
+      if (fix) return fix;
+    }
     const inward = (LEFT.has(k) && mx > 0) || (RIGHT.has(k) && mx < 0);
     if (Math.abs(my) >= Math.abs(mx) * 0.8) {
       if (my > 0) return `Aim your thumb at the top edge of ${L}: the pad of your thumb lands lower than the point you look at.`;
