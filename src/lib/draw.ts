@@ -353,6 +353,9 @@ export function heroAnim(cv: HTMLCanvasElement) {
   const dots: { dx: number; dy: number; b: number; hit: boolean }[] = [];
   let t0 = performance.now(), last = 0;
   const focusK = 'o';
+  // most taps land a little low and left of O; every fourth misses, alternately left onto I and down onto K
+  const offset = (i: number): [number, number] =>
+    i % 8 === 3 ? [-25 + gauss(r) * 4, 1 + gauss(r) * 5] : i % 8 === 7 ? [-15 + gauss(r) * 4, 41 + gauss(r) * 3] : [-2.6 + gauss(r) * 3.2, 3 + gauss(r) * 2.6];
   function frame(t: number) {
     if (!cv.isConnected) return;
     const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
@@ -395,7 +398,7 @@ export function heroAnim(cv: HTMLCanvasElement) {
     }
     if (e - last > 320 && dots.length < 16 && e < 6000) {
       last = e;
-      const dx = -2.6 + gauss(r) * 3.2, dy = 3 + gauss(r) * 2.6;
+      const [dx, dy] = offset(dots.length);
       dots.push({ dx, dy, b: t, hit: hitTest(key.cx + dx, key.cy + dy) === focusK });
     }
     for (const d of dots) {
@@ -416,7 +419,7 @@ export function heroAnim(cv: HTMLCanvasElement) {
       c.globalAlpha = 1;
     }
     if (dots.length >= 10) {
-      const n = dots.length, mx = dots.reduce((a, d) => a + d.dx, 0) / n, my = dots.reduce((a, d) => a + d.dy, 0) / n, p = clamp((e - 3500) / 600, 0, 1);
+      const mx = median(dots.map((d) => d.dx)), my = median(dots.map((d) => d.dy)), p = clamp((e - 3500) / 600, 0, 1);
       const cx = X(key.cx), cy = Y(key.cy), ex = cx + (X(key.cx + mx) - cx) * p, ey = cy + (Y(key.cy + my) - cy) * p;
       c.strokeStyle = cssVar('--gold');
       c.lineWidth = 3;
@@ -424,16 +427,23 @@ export function heroAnim(cv: HTMLCanvasElement) {
       c.fillStyle = cssVar('--gold');
       c.beginPath(); c.arc(ex, ey, 6, 0, 7); c.fill();
       if (p >= 1) {
-        const txt = `${fmt1(Math.abs(my))} pt low · ${fmt1(Math.abs(mx))} pt left`;
+        // the average drift, in the empty corner right of L so it never covers the taps
+        const lines = [`${fmt1(Math.abs(my))} pt low`, `${fmt1(Math.abs(mx))} pt left`];
         c.font = `600 11px ${cssVar('--f-mono')}`;
-        const tw = c.measureText(txt).width + 16, bx = clamp(ex - tw / 2, 6, W - tw - 6), by = Math.min(H - 28, ey + 14);
+        const tw = Math.max(...lines.map((l) => c.measureText(l).width)) + 26, th = 38, bx = W - tw - 5, by = H - th - 6;
         c.fillStyle = cssVar('--ink');
         c.beginPath();
-        if (c.roundRect) c.roundRect(bx, by, tw, 22, 7);
-        else c.rect(bx, by, tw, 22);
+        if (c.roundRect) c.roundRect(bx, by, tw, th, 8);
+        else c.rect(bx, by, tw, th);
+        c.fill();
+        c.fillStyle = cssVar('--gold');
+        c.beginPath();
+        c.arc(bx + 10, by + th / 2, 4, 0, 7);
         c.fill();
         c.fillStyle = cssVar('--bg');
-        c.fillText(txt, bx + tw / 2, by + 11.5);
+        c.textAlign = 'left';
+        lines.forEach((l, i) => c.fillText(l, bx + 19, by + 12 + i * 14));
+        c.textAlign = 'center';
       }
     }
     c.strokeStyle = cssVar('--kb-ink');
@@ -444,7 +454,7 @@ export function heroAnim(cv: HTMLCanvasElement) {
   }
   if (reduceMotion()) {
     for (let i = 0; i < 14; i++) {
-      const dx = -2.6 + gauss(r) * 3.2, dy = 3 + gauss(r) * 2.6;
+      const [dx, dy] = offset(i);
       dots.push({ dx, dy, b: -1e4, hit: hitTest(KEY.o.cx + dx, KEY.o.cy + dy) === 'o' });
     }
     t0 = performance.now() - 5000;
