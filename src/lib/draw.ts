@@ -353,9 +353,10 @@ export function heroAnim(cv: HTMLCanvasElement) {
   const dots: { dx: number; dy: number; b: number; hit: boolean }[] = [];
   let t0 = performance.now(), last = 0;
   const focusK = 'o';
-  // most taps land a little low and left of O; every fourth misses, alternately left onto I and down onto K
+  // most taps land clearly low and left of O (enough for the drift arrow to read at this size); every fourth misses,
+  // alternately left onto I and down onto K
   const offset = (i: number): [number, number] =>
-    i % 8 === 3 ? [-25 + gauss(r) * 4, 1 + gauss(r) * 5] : i % 8 === 7 ? [-15 + gauss(r) * 4, 41 + gauss(r) * 3] : [-2.6 + gauss(r) * 3.2, 3 + gauss(r) * 2.6];
+    i % 8 === 3 ? [-25 + gauss(r) * 4, 1 + gauss(r) * 5] : i % 8 === 7 ? [-15 + gauss(r) * 4, 41 + gauss(r) * 3] : [-6 + gauss(r) * 2.6, 7 + gauss(r) * 2.2];
   function frame(t: number) {
     if (!cv.isConnected) return;
     const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
@@ -425,7 +426,7 @@ export function heroAnim(cv: HTMLCanvasElement) {
       c.lineWidth = 3;
       c.beginPath(); c.moveTo(cx, cy); c.lineTo(ex, ey); c.stroke();
       c.fillStyle = cssVar('--gold');
-      c.beginPath(); c.arc(ex, ey, 6, 0, 7); c.fill();
+      c.beginPath(); c.arc(ex, ey, 4.5, 0, 7); c.fill();
       if (p >= 1) {
         // the average drift, in the empty corner right of L so it never covers the taps
         const lines = [`${fmt1(Math.abs(my))} pt low`, `${fmt1(Math.abs(mx))} pt left`];
