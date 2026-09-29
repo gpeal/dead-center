@@ -12,7 +12,7 @@ import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { RoundResult } from '../lib/round';
 import { allTaps, type Mode, type Tap } from '../lib/store';
-import { reduceMotion } from '../lib/util';
+import { reduceMotion, scroller } from '../lib/util';
 
 function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -47,7 +47,7 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
 
   const celebrated = useRef(false);
   useEffect(() => {
-    window.scrollTo(0, 0);
+    scroller().scrollTop = 0;
     let c = 0;
     if (s.hits === s.n || pbW) c = window.setTimeout(confetti, 350);
     if (!celebrated.current) {

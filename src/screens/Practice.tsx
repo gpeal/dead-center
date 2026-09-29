@@ -5,7 +5,7 @@ import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { Hint, Round } from '../lib/round';
 import { save, store } from '../lib/store';
-import { COARSE, pct } from '../lib/util';
+import { COARSE, lockScroll, pct } from '../lib/util';
 
 const BASE_HINT: Record<string, Hint> = {
   baseline: { tone: 'ok', label: 'Baseline', text: 'Type each line. Misses are logged and you keep going.' },
@@ -44,10 +44,7 @@ export function Practice({ round: r, onExit }: { round: Round; onExit: () => voi
   const kbRef = useRef<Kb | null>(null);
 
   useEffect(() => {
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.documentElement.style.overflow = '';
-    };
+    return lockScroll();
   }, []);
   useEffect(() => {
     if (!armedAt) return;

@@ -1,4 +1,11 @@
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}img{max-width:100%}
+/* The page itself never scrolls; #root does. iOS 26 blurs content under the status bar when the page's own scroll
+   view scrolls (the scroll edge effect), and a web page cannot turn that off, so scrolling happens in an inner box
+   that starts below the status bar. */
+html,body{overflow:hidden;overscroll-behavior:none}
+body{margin:0}
+#root{position:fixed;left:0;right:0;top:env(safe-area-inset-top,0px);bottom:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain}
+#root.locked{overflow:hidden}
+[hidden]{display:none!important}img{max-width:100%}
 :root{
   --bg:#ECEEF2; --surface:#FFFFFF; --surface-2:#F5F6F8; --ink:#0F1522; --ink-2:#333B4B; --muted:#5E6778; --faint:#8A92A3; --line:#D9DDE5;
   --accent:#2458F0; --accent-ink:#FFFFFF; --accent-soft:#E2E9FE;
@@ -45,7 +52,7 @@ p{margin:0}
 .num{font-family:var(--f-display);font-variation-settings:"wdth" 125;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
 
 /* ---------- shell ---------- */
-.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:6px calc(var(--tab-h) + 24px)}
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:6px calc(var(--tab-h) + 24px + env(safe-area-inset-bottom,0px))}
 .screen{display:flex;flex-direction:column;gap:14px;animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
 /* --dx is set on .app from the direction of the last tab switch, so screens slide in from that side */
 @keyframes screenIn{from{opacity:.001;transform:translate(var(--dx,0px),6px)}to{opacity:1;transform:none}}
@@ -284,7 +291,7 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 
 /* ---------- overlays ---------- */
 .overlay{position:relative;background:var(--bg)}
-.overlay .app{padding-block:calc(env(safe-area-inset-top,0px) + 8px) calc(env(safe-area-inset-bottom,0px) + 16px)}
+.overlay .app{padding-block:8px calc(env(safe-area-inset-bottom,0px) + 16px)}
 .res-hero{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-block:4px 0}
 .res-close{position:absolute;left:-8px;top:-4px}
 .screen.res{gap:12px}

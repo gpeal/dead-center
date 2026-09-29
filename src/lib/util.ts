@@ -43,3 +43,12 @@ export function shuffle<T>(a: T[], r = Math.random) {
   }
   return a;
 }
+
+/** The app's scroll container (the page itself never scrolls; see #root in styles.css). */
+export const scroller = () => document.getElementById('root')!;
+/** Stops the app from scrolling while a sheet or a round is open. Returns the undo. */
+export function lockScroll() {
+  const el = scroller();
+  el.classList.add('locked');
+  return () => el.classList.remove('locked');
+}
