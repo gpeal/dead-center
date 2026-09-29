@@ -48,7 +48,8 @@ export const TRAINABLE = [...LETTERS, 'space', 'shift'];
 export const glyph = (k: string) => (k === 'space' ? '␣' : k === 'shift' ? '⇧' : k.toUpperCase());
 const NAMES: Record<string, string> = { space: 'Space', shift: 'Shift', del: 'Delete', '123': '123', ret: 'Return', emoji: 'Emoji', mic: 'Dictation', siri: 'Siri bar', none: 'Gap' };
 export const lab = (k: string) => NAMES[k] || (k || '').toUpperCase();
-export const LEFT = new Set([...'qwertasdfgzxcv', 'shift']), RIGHT = new Set('yuiophjklbnm'), HANDOFF = new Set('tygbhvn'), EDGE = new Set([...'qazpl', 'shift']);
+// B goes to the left thumb, matching the usual split (T, G, V, B left; Y, H, N right)
+export const LEFT = new Set([...'qwertasdfgzxcvb', 'shift']), RIGHT = new Set('yuiophjklnm'), HANDOFF = new Set('tygbhvn'), EDGE = new Set([...'qazpl', 'shift']);
 export function edist(dx: number, dy: number, key: KeyDef) {
   return Math.hypot(dx / (key.w / 2), dy / (key.h / 2));
 }

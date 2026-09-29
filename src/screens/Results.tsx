@@ -99,8 +99,8 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
             </section>
           )}
           <section className="card tip">
-            <span className="ic"><Icon name="target" /></span>
-            <div><span className="eyebrow">Try this next round</span><p>{tip}</p></div>
+            <span className="eyebrow">Try this next round</span>
+            <p>{tip}</p>
           </section>
           <div className="btnstack">
             <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />Next round</button>
