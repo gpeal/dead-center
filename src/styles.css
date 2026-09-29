@@ -211,6 +211,11 @@ button.rrow:active{background:var(--surface-2)}
 .chartcard{padding:16px 14px 10px}
 .chartcard .hd{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;flex-wrap:wrap}
 .chart{width:100%;display:block}
+.chartwrap{position:relative;touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.chart-tip{position:absolute;top:-6px;transform:translate(-50%,-100%);display:flex;flex-direction:column;gap:2px;padding:6px 9px;border-radius:10px;background:var(--ink);color:var(--bg);font:500 11.5px/1.25 var(--f-mono);white-space:nowrap;pointer-events:none;z-index:2;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.chart-tip b{font:600 12px/1.2 var(--f-body)}
+.chart-tip span{display:flex;align-items:center;gap:6px}
+.chart-tip i{width:7px;height:7px;border-radius:50%;display:inline-block}
 .chart text{font:500 10px var(--f-mono);fill:var(--muted)}
 .keys-mastery{display:grid;grid-template-columns:repeat(auto-fill,minmax(40px,1fr));gap:8px}
 .km{display:flex;flex-direction:column;align-items:center;gap:4px;font:500 10px/1 var(--f-mono);color:var(--muted)}

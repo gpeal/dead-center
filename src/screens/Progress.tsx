@@ -26,7 +26,7 @@ function Charts({ sessions }: { sessions: ReturnType<typeof dataset>['sessions']
         </div>
         <LineChart
           series={[{ values: last.map((s) => s.acc), color: 'var(--accent)', label: 'Accuracy' }, { values: last.map((s) => s.prec || 0), color: 'var(--gold)', label: 'Centered', w: 2 }]}
-          yMin={yMin} yMax={1} ticks={[yMin, (yMin + 1) / 2, 1].map((v) => Math.round(v * 100) / 100)} fmt={(v) => Math.round(v * 100) + '%'} xLabel={(i) => dateLabel(last[i].ts)}
+          yMin={yMin} yMax={1} ticks={[yMin, (yMin + 1) / 2, 1].map((v) => Math.round(v * 100) / 100)} fmt={(v) => Math.round(v * 100) + '%'} xLabel={(i) => dateLabel(last[i].ts)} pointLabel={(i) => relDate(last[i].ts)}
         />
       </section>
       <section className="card chartcard">
@@ -34,7 +34,7 @@ function Charts({ sessions }: { sessions: ReturnType<typeof dataset>['sessions']
           <span className="eyebrow">Speed</span>
           <span className="legend" style={{ padding: 0 }}>wpm</span>
         </div>
-        <LineChart series={[{ values: last.map((s) => s.wpm || 0), color: 'var(--green)', label: 'Speed' }]} yMin={0} yMax={top} ticks={[0, top / 2, top]} fmt={(v) => String(Math.round(v))} height={130} xLabel={(i) => dateLabel(last[i].ts)} />
+        <LineChart series={[{ values: last.map((s) => s.wpm || 0), color: 'var(--green)', label: 'Speed' }]} yMin={0} yMax={top} ticks={[0, top / 2, top]} fmt={(v) => String(Math.round(v))} height={130} xLabel={(i) => dateLabel(last[i].ts)} pointLabel={(i) => relDate(last[i].ts)} tipFmt={(v) => Math.round(v) + ' wpm'} />
       </section>
     </>
   );

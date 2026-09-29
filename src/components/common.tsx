@@ -1,7 +1,8 @@
-import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import { Icon } from './Icon';
 import { lab } from '../lib/keys';
 import type { Mode } from '../lib/store';
+import { buzz } from '../lib/feedback';
 import { clamp } from '../lib/util';
 
 export type Tab = 'home' | 'map' | 'progress';
@@ -88,16 +89,21 @@ function smoothPath(pts: [number, number][]) {
 }
 export interface Series { values: number[]; color: string; label: string; w?: number }
 let gradId = 0;
-export function LineChart({ series, yMin, yMax, ticks, fmt = (v) => String(v), height = 160, xLabel = (i) => '#' + (i + 1) }: {
-  series: Series[]; yMin: number; yMax: number; ticks: number[]; fmt?: (v: number) => string; height?: number; xLabel?: (i: number) => string;
+/**
+ * A smoothed line chart you can scrub: press and hold, then drag, to read each point (a quick swipe still scrolls
+ * the page). With a mouse it follows the pointer. `pointLabel` names the point under your finger.
+ */
+export function LineChart({ series, yMin, yMax, ticks, fmt = (v) => String(v), height = 160, xLabel = (i) => '#' + (i + 1), pointLabel = xLabel, tipFmt = fmt }: {
+  series: Series[]; yMin: number; yMax: number; ticks: number[]; fmt?: (v: number) => string; height?: number; xLabel?: (i: number) => string; pointLabel?: (i: number) => string; tipFmt?: (v: number) => string;
 }) {
   const [ref, w] = useWidth<HTMLDivElement>();
   const [gid] = useState(() => 'g' + ++gradId);
   const W = Math.max(240, w || 320), H = height, pl = 34, pr = 16, pt = 14, pb = 22;
   const n = Math.max(...series.map((s) => s.values.length));
   const X = (i: number) => (n <= 1 ? pl + (W - pl - pr) / 2 : pl + (i * (W - pl - pr)) / (n - 1)), Y = (v: number) => pt + (1 - (v - yMin) / (yMax - yMin)) * (H - pt - pb);
+  const sel = useScrub(ref, { W, pl, pr, n });
   return (
-    <div ref={ref}>
+    <div ref={ref} className="chartwrap">
       {n > 0 && w > 0 && (
         <svg className="chart" viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={`${series.map((s) => s.label).join(' and ')} by round`}>
           {ticks.map((t, i) => (
@@ -129,10 +135,92 @@ export function LineChart({ series, yMin, yMax, ticks, fmt = (v) => String(v), h
               </g>
             );
           })}
+          {sel != null && (
+            <g className="scrub">
+              <line x1={X(sel)} x2={X(sel)} y1={pt - 6} y2={H - pb} style={{ stroke: 'var(--ink)' }} strokeOpacity=".35" strokeWidth="1" />
+              {series.map((s) => s.values[sel] != null && <circle key={s.label} cx={X(sel)} cy={Y(clamp(s.values[sel], yMin, yMax))} r="5" style={{ fill: s.color, stroke: 'var(--surface)' }} strokeWidth="2.5" />)}
+            </g>
+          )}
         </svg>
+      )}
+      {sel != null && w > 0 && (
+        <div className="chart-tip" style={{ left: clamp((X(sel) / W) * w, 70, w - 70) }}>
+          <b>{pointLabel(sel)}</b>
+          {series.map((s) => s.values[sel] != null && (
+            <span key={s.label}><i style={{ background: s.color }} />{series.length > 1 ? s.label.toLowerCase() + ' ' : ''}{tipFmt(s.values[sel])}</span>
+          ))}
+        </div>
       )}
     </div>
   );
+}
+
+/** Which point is being scrubbed, from pointer input on `ref` (a hold starts it on touch, so swipes still scroll). */
+function useScrub(ref: RefObject<HTMLDivElement | null>, geo: { W: number; pl: number; pr: number; n: number }) {
+  const [sel, setSel] = useState<number | null>(null);
+  const g = useRef(geo);
+  g.current = geo;
+  useEffect(() => {
+    const el = ref.current!;
+    let timer = 0, active = false, sx = 0, sy = 0, cur: number | null = null;
+    const at = (clientX: number) => {
+      const { W, pl, pr, n } = g.current, r = el.getBoundingClientRect();
+      if (n <= 1) return 0;
+      const x = ((clientX - r.left) / r.width) * W;
+      return clamp(Math.round(((x - pl) / (W - pl - pr)) * (n - 1)), 0, n - 1);
+    };
+    const set = (i: number | null) => {
+      if (i === cur) return;
+      cur = i;
+      setSel(i);
+      if (i != null && active) buzz(); // a tick for each round you cross
+    };
+    const end = () => {
+      clearTimeout(timer);
+      active = false;
+      set(null);
+    };
+    const down = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') return;
+      sx = e.clientX;
+      sy = e.clientY;
+      timer = window.setTimeout(() => {
+        active = true;
+        set(at(sx));
+      }, 200);
+    };
+    const move = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') return set(at(e.clientX));
+      if (active) set(at(e.clientX));
+      else if (Math.hypot(e.clientX - sx, e.clientY - sy) > 8) clearTimeout(timer); // a swipe: let the page scroll
+    };
+    const leave = (e: PointerEvent) => {
+      if (e.pointerType === 'mouse') set(null);
+    };
+    // once scrubbing, the finger drives the chart instead of scrolling the page
+    const touchmove = (e: TouchEvent) => {
+      if (active && e.cancelable) e.preventDefault();
+    };
+    el.addEventListener('pointerdown', down);
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+    el.addEventListener('pointerleave', leave);
+    el.addEventListener('touchmove', touchmove, { passive: false });
+    el.addEventListener('touchend', end);
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+    return () => {
+      clearTimeout(timer);
+      el.removeEventListener('pointerdown', down);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', end);
+      el.removeEventListener('pointercancel', end);
+      el.removeEventListener('pointerleave', leave);
+      el.removeEventListener('touchmove', touchmove);
+      el.removeEventListener('touchend', end);
+    };
+  }, [ref]);
+  return sel;
 }
 
 /** Changes when the light/dark scheme does, so canvases (which read CSS colors once) can repaint. */

@@ -155,7 +155,7 @@ export function KeySheet({ k, onClose }: { k: string; onClose: () => void }) {
       {series.length >= 2 && (
         <div className="why">
           <h3>Accuracy by round</h3>
-          <LineChart series={[{ values: series.map((x) => x.acc), color: 'var(--accent)', label: 'Accuracy' }]} yMin={lo} yMax={1} ticks={[0.5, 0.75, 1].filter((v) => v >= lo)} fmt={(v) => Math.round(v * 100) + '%'} height={110} xLabel={(i) => (i === 0 ? 'first' : 'latest')} />
+          <LineChart series={[{ values: series.map((x) => x.acc), color: 'var(--accent)', label: 'Accuracy' }]} yMin={lo} yMax={1} ticks={[0.5, 0.75, 1].filter((v) => v >= lo)} fmt={(v) => Math.round(v * 100) + '%'} height={110} xLabel={(i) => (i === 0 ? 'first' : 'latest')} pointLabel={(i) => `Round ${i + 1} of ${series.length}`} />
         </div>
       )}
       {imp && (
