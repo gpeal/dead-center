@@ -35,7 +35,7 @@ function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
   return <span ref={ref} className="num">0</span>;
 }
 
-export function Results({ result, past = false, onStart, onClose }: { result: RoundResult; past?: boolean; onStart: (mode: Mode, focus?: string[]) => void; onClose: (then: Tab) => void }) {
+export function Results({ result, past = false, quiet = false, onStart, onClose }: { result: RoundResult; past?: boolean; quiet?: boolean; onStart: (mode: Mode, focus?: string[]) => void; onClose: (then: Tab) => void }) {
   const { sess: s, taps, pbW } = result;
   const acc = s.acc, prec = s.prec || 0;
   const grade = acc >= 0.99 && prec >= 0.6 ? 'Dead center.' : acc >= 0.96 ? 'Sharp.' : acc >= 0.9 ? 'Solid.' : acc >= 0.8 ? 'Getting there.' : 'Wobbly.';
@@ -48,15 +48,15 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
   useEffect(() => {
     window.scrollTo(0, 0);
     let c = 0;
-    if (!past && (s.hits === s.n || pbW)) c = window.setTimeout(confetti, 350);
-    if (!past && !celebrated.current) {
+    if (!past && !quiet && (s.hits === s.n || pbW)) c = window.setTimeout(confetti, 350);
+    if (!past && !quiet && !celebrated.current) {
       celebrated.current = true;
       if (s.hits === s.n || pbW) sound('chime');
     }
     return () => {
       clearTimeout(c);
     };
-  }, [past, pbW, s]);
+  }, [past, quiet, pbW, s]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawMissKeys(cv, kb, taps, []);

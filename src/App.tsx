@@ -1,4 +1,4 @@
-import { Activity, useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Activity, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ActionsContext, type Actions, type Tab } from './components/common';
 import { KeySheet } from './components/KeySheet';
 import { TabBar } from './components/TabBar';
@@ -12,17 +12,32 @@ import { Progress } from './screens/Progress';
 import { Results } from './screens/Results';
 
 const ORDER: Tab[] = ['home', 'map', 'progress'];
-// past: a saved round reopened from Progress, which returns there when closed
-type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult; past?: boolean } | null;
+// past: a saved round reopened from Progress, which returns there when closed; quiet: reopened by a reload, so no confetti
+type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean } | null;
+
+// The results screen is kept in the URL (#results-<id>, or #round-<id> for one reopened from Progress), so a reload,
+// including the update banner's Reload button, lands back on it instead of on Today.
+const RESULTS_HASH = /^#(results|round)-(\d+)$/;
+function overlayFromHash(): Overlay {
+  const m = RESULTS_HASH.exec(location.hash);
+  const sess = m && realSessions().find((s) => s.id === +m[2]);
+  return sess ? { kind: 'results', result: pastResult(sess), past: m[1] === 'round', quiet: true } : null;
+}
 
 export function App() {
   const [tab, setTab] = useState<Tab>(() => {
     const h = location.hash.slice(1) as Tab;
+    if (location.hash.startsWith('#round-')) return 'progress';
     return ORDER.includes(h) ? h : 'home';
   });
   const [dir, setDir] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | null>(null);
-  const [overlay, setOverlay] = useState<Overlay>(null);
+  const [overlay, setOverlay] = useState<Overlay>(overlayFromHash);
+  useEffect(() => {
+    const url = location.pathname + location.search;
+    if (overlay?.kind === 'results') history.replaceState(null, '', `${url}#${overlay.past ? 'round' : 'results'}-${overlay.result.sess.id}`);
+    else if (RESULTS_HASH.test(location.hash)) history.replaceState(null, '', url);
+  }, [overlay]);
 
   // each tab keeps its own scroll position, since all three stay mounted
   const scrolls = useRef<Record<string, number>>({});
@@ -78,7 +93,7 @@ export function App() {
       </Activity>
       {sheetKey && <KeySheet key={sheetKey} k={sheetKey} onClose={closeSheet} />}
       {overlay?.kind === 'practice' && <Practice key={overlay.round.sid} round={overlay.round} onExit={() => closeOverlay()} />}
-      {overlay?.kind === 'results' && <Results key={overlay.result.sess.id} result={overlay.result} past={overlay.past} onStart={start} onClose={closeOverlay} />}
+      {overlay?.kind === 'results' && <Results key={overlay.result.sess.id} result={overlay.result} past={overlay.past} quiet={overlay.quiet} onStart={start} onClose={closeOverlay} />}
       <Toasts />
       <UpdateBanner />
     </ActionsContext.Provider>
