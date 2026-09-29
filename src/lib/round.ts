@@ -1,7 +1,7 @@
 import { KEY, edist, quality, focusCode, type KeyDef } from './keys';
 import { buzz, sound } from './feedback';
 import { linesFor } from './game';
-import { commitTaps, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
+import { allTaps, commitTaps, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
 import { dayDiff, today } from './util';
 import type { Point, ShiftState } from './keyboard';
 
@@ -254,7 +254,7 @@ export class Round {
     clearTimeout(this.hintT);
     const n = this.scored, acc = this.good / n, prec = this.precN ? this.precSum / this.precN : 0;
     const dur = Math.max(1, (this.tLast - this.t0) / 1000), chars = this.lines.reduce((a, l) => a + l.length, 0), wpm = chars / 5 / (dur / 60);
-    const sess: Session = { id: this.sid, ts: Date.now(), mode: this.mode, focus: this.focus.map(focusCode).join(''), n, hits: this.good, acc, prec, wpm: Math.round(wpm * 10) / 10, combo: this.maxCombo, bull: this.maxBull, dur: Math.round(dur), caseSlips: this.caseSlips };
+    const sess: Session = { id: this.sid, ts: Date.now(), mode: this.mode, focus: this.focus.map(focusCode).join(''), n, hits: this.good, acc, prec, wpm: Math.round(wpm * 10) / 10, combo: this.maxCombo, bull: this.maxBull, dur: Math.round(dur), caseSlips: this.caseSlips, realigns: this.realigns };
     const prevBest = S.bests.wpm, prevRounds = realSessions().length;
     commitTaps(this.taps);
     S.sessions.push(sess);
@@ -272,4 +272,9 @@ export class Round {
     const result: RoundResult = { sess, taps: this.taps.map(toObj), pbW, caseSlips: this.caseSlips, realigns: this.realigns, maxBull: this.maxBull };
     setTimeout(() => this.onFinish(result), 350);
   }
+}
+
+/** Rebuilds a finished round's results from what was saved, to reopen its summary later. */
+export function pastResult(sess: Session): RoundResult {
+  return { sess, taps: allTaps().filter((t) => t.sid === sess.id), pbW: false, caseSlips: sess.caseSlips || 0, realigns: sess.realigns || 0, maxBull: sess.bull || 0 };
 }

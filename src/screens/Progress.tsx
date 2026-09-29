@@ -129,7 +129,7 @@ function SettingsCard() {
 
 export function Progress() {
   const version = useStore();
-  const { openKey } = useActions();
+  const { openKey, openRound } = useActions();
   const ds = useMemo(() => dataset(), [version]);
   const { taps: t, sessions: rs } = ds;
   const hits = t.filter((x) => x.h === x.k).length;
@@ -151,13 +151,14 @@ export function Progress() {
           <SectionH title="Recent rounds"><span className="eyebrow">{rs.length} total</span></SectionH>
           <section className="card" style={{ paddingBlock: 10 }}>
             <div className="rounds">
-              <div className="rrow rhead"><span>Round</span><span className="m">Acc</span><span className="m">WPM</span></div>
+              <div className="rrow rhead"><span>Round</span><span className="m">Acc</span><span className="m">WPM</span><span /></div>
               {rs.slice(-5).reverse().map((s) => (
-                <div className="rrow" key={s.id}>
+                <button className="rrow" key={s.id} onClick={() => openRound(s.id)} aria-label={`${modeName(s)}, ${relDate(s.ts)}. Open summary`}>
                   <span className="n"><b>{modeName(s)}</b><span>{relDate(s.ts)}</span></span>
                   <span className="m">{pct(s.acc)}%</span>
                   <span className="m">{Math.round(s.wpm || 0)}</span>
-                </div>
+                  <Icon name="chev" />
+                </button>
               ))}
             </div>
           </section>

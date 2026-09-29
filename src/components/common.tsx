@@ -10,6 +10,7 @@ export interface Actions {
   go(tab: Tab): void;
   openKey(k: string): void;
   start(mode: Mode, focus?: string[]): void;
+  openRound(id: number): void;
 }
 export const ActionsContext = createContext<Actions | null>(null);
 export const useActions = () => useContext(ActionsContext)!;

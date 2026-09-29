@@ -12,7 +12,7 @@ import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { RoundResult } from '../lib/round';
 import { allTaps, type Mode, type Tap } from '../lib/store';
-import { reduceMotion } from '../lib/util';
+import { reduceMotion, relDate } from '../lib/util';
 
 function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
   const ref = useRef<HTMLSpanElement>(null);
@@ -35,7 +35,7 @@ function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
   return <span ref={ref} className="num">0</span>;
 }
 
-export function Results({ result, onStart, onClose }: { result: RoundResult; onStart: (mode: Mode, focus?: string[]) => void; onClose: (then: Tab) => void }) {
+export function Results({ result, past = false, onStart, onClose }: { result: RoundResult; past?: boolean; onStart: (mode: Mode, focus?: string[]) => void; onClose: (then: Tab) => void }) {
   const { sess: s, taps, pbW } = result;
   const acc = s.acc, prec = s.prec || 0;
   const grade = acc >= 0.99 && prec >= 0.6 ? 'Dead center.' : acc >= 0.96 ? 'Sharp.' : acc >= 0.9 ? 'Solid.' : acc >= 0.8 ? 'Getting there.' : 'Wobbly.';
@@ -49,15 +49,15 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
   useEffect(() => {
     window.scrollTo(0, 0);
     let c = 0;
-    if (s.hits === s.n || pbW) c = window.setTimeout(confetti, 350);
-    if (!celebrated.current) {
+    if (!past && (s.hits === s.n || pbW)) c = window.setTimeout(confetti, 350);
+    if (!past && !celebrated.current) {
       celebrated.current = true;
       if (s.hits === s.n || pbW) sound('chime');
     }
     return () => {
       clearTimeout(c);
     };
-  }, [pbW, s]);
+  }, [past, pbW, s]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawDots(cv, kb, taps);
@@ -74,8 +74,8 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
       <div className="app">
         <div className="screen res">
           <div className="res-hero">
-            <button className="iconbtn res-close" aria-label="Done" onClick={() => onClose('home')}><Icon name="close" /></button>
-            <span className="eyebrow">{modeName(s)} complete</span>
+            <button className="iconbtn res-close" aria-label="Done" onClick={() => onClose(past ? 'progress' : 'home')}><Icon name="close" /></button>
+            <span className="eyebrow">{past ? `${modeName(s)} · ${relDate(s.ts)}` : `${modeName(s)} complete`}</span>
             <h1>{grade}</h1>
             <div className="stars" aria-label={`${stars} of 3`}>{[0, 1, 2].map((i) => <Star key={i} on={i < stars} />)}</div>
           </div>
@@ -90,6 +90,8 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
               <MissMap keys={missKeys} taps={taps} />
               {slips && <p className="slips">{slips}</p>}
             </section>
+          ) : !taps.length ? (
+            <section className="card small muted">The tap details for this round are no longer stored; only the most recent 40,000 taps are kept.</section>
           ) : (
             <section className="card mapcard">
               <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
@@ -98,12 +100,14 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
               </div>
             </section>
           )}
-          <section className="card tip">
-            <span className="eyebrow">Try this next round</span>
-            <p>{tip}</p>
-          </section>
+          {taps.length > 0 && (
+            <section className="card tip">
+              <span className="eyebrow">Try this next round</span>
+              <p>{tip}</p>
+            </section>
+          )}
           <div className="btnstack">
-            <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />Next round</button>
+            <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />{past ? 'Start a round' : 'Next round'}</button>
             <div className="btnrow">
               {focus.length > 0 && <button className="btn gold" onClick={() => onStart('drill', focus)}><Icon name="target" />Drill {focus.map(lab).join(' ')}</button>}
               <button className="btn ghost" onClick={() => onClose('map')}>Tap map</button>

@@ -72,7 +72,7 @@ p{margin:0}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:52px;padding-inline:20px;border-radius:16px;font:700 16px/1 var(--f-body);transition:transform .12s ease,filter .12s ease,background .2s}
 .btn:active{transform:scale(.97)}
-.btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 8px 20px -8px color-mix(in srgb,var(--accent) 70%,transparent)}
+.btn.primary{background:var(--accent);color:var(--accent-ink)}
 .btn.gold{background:var(--gold);color:#241800}
 .btn.ghost{background:var(--surface-2);color:var(--ink)}
 .btn.block{width:100%}
@@ -134,8 +134,11 @@ p{margin:0}
 
 /* recent rounds */
 .rounds{display:flex;flex-direction:column}
-.rrow{display:grid;grid-template-columns:1fr repeat(2,56px);gap:8px;align-items:center;padding-block:10px;border-top:1px solid var(--line);font-size:14px}
+.rrow{display:grid;grid-template-columns:1fr repeat(2,56px) 16px;width:100%;text-align:left;gap:8px;align-items:center;padding-block:10px;border-top:1px solid var(--line);font-size:14px}
 .rrow:first-child{border-top:0}
+button.rrow{transition:background .15s}
+button.rrow:active{background:var(--surface-2)}
+.rrow > svg{width:16px;height:16px;color:var(--faint)}
 .rrow .m{text-align:right;font:500 13px/1 var(--f-mono);font-variant-numeric:tabular-nums}
 .rrow .n{display:flex;flex-direction:column;gap:3px;min-width:0}
 .rrow .n b{font-weight:600}

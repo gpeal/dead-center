@@ -3,8 +3,8 @@ import { ActionsContext, type Actions, type Tab } from './components/common';
 import { KeySheet } from './components/KeySheet';
 import { TabBar } from './components/TabBar';
 import { Toasts, UpdateBanner } from './components/Toasts';
-import { Round, type RoundResult } from './lib/round';
-import type { Mode } from './lib/store';
+import { pastResult, Round, type RoundResult } from './lib/round';
+import { realSessions, type Mode } from './lib/store';
 import { Home } from './screens/Home';
 import { MapScreen } from './screens/MapScreen';
 import { Practice } from './screens/Practice';
@@ -12,7 +12,8 @@ import { Progress } from './screens/Progress';
 import { Results } from './screens/Results';
 
 const ORDER: Tab[] = ['home', 'map', 'progress'];
-type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult } | null;
+// past: a saved round reopened from Progress, which returns there when closed
+type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult; past?: boolean } | null;
 
 export function App() {
   const [tab, setTab] = useState<Tab>(() => {
@@ -44,7 +45,14 @@ export function App() {
     const round = new Round(mode, focus.filter(Boolean), (result) => setOverlay({ kind: 'results', result }));
     setOverlay({ kind: 'practice', round });
   }, [overlay]);
-  const actions = useMemo<Actions>(() => ({ go, start, openKey: setSheetKey }), [go, start]);
+  const openRound = useCallback((id: number) => {
+    const sess = realSessions().find((s) => s.id === id);
+    if (!sess) return;
+    setSheetKey(null);
+    scrolls.current[tabRef.current] = window.scrollY;
+    setOverlay({ kind: 'results', result: pastResult(sess), past: true });
+  }, []);
+  const actions = useMemo<Actions>(() => ({ go, start, openKey: setSheetKey, openRound }), [go, start, openRound]);
   const closeSheet = useCallback(() => setSheetKey(null), []);
   const closeOverlay = useCallback((then?: Tab) => {
     setOverlay(null);
@@ -70,7 +78,7 @@ export function App() {
       </Activity>
       {sheetKey && <KeySheet key={sheetKey} k={sheetKey} onClose={closeSheet} />}
       {overlay?.kind === 'practice' && <Practice key={overlay.round.sid} round={overlay.round} onExit={() => closeOverlay()} />}
-      {overlay?.kind === 'results' && <Results key={overlay.result.sess.id} result={overlay.result} onStart={start} onClose={closeOverlay} />}
+      {overlay?.kind === 'results' && <Results key={overlay.result.sess.id} result={overlay.result} past={overlay.past} onStart={start} onClose={closeOverlay} />}
       <Toasts />
       <UpdateBanner />
     </ActionsContext.Provider>

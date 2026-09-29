@@ -9,7 +9,7 @@ export interface Tap { sid: number; k: string; h: string; dx: number; dy: number
 export type Mode = 'baseline' | 'round' | 'drill';
 export interface Session {
   id: number; ts: number; mode: Mode; focus: string; n: number; hits: number; acc: number;
-  prec?: number; wpm?: number; combo?: number; bull?: number; dur?: number; caseSlips?: number; partial?: boolean;
+  prec?: number; wpm?: number; combo?: number; bull?: number; dur?: number; caseSlips?: number; realigns?: number; partial?: boolean;
 }
 export interface Settings { sound: boolean; haptics: boolean; dots: boolean; len: number }
 export interface State {
