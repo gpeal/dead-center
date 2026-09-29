@@ -13,8 +13,10 @@ function weights() {
   }
   return w;
 }
+const NO_REPEAT = 300;
 function adaptiveLines(n: number) {
-  const S = store.S, w = weights(), used = new Set(S.used.slice(-45));
+  // a sentence can't come back until 300 others have been served (about 100 rounds at 3 lines)
+  const S = store.S, w = weights(), used = new Set(S.used.slice(-NO_REPEAT));
   const cand = SENTENCES.map((s, i) => ({ i, s, sc: [...s].reduce((a, c) => a + (w[c === ' ' ? 'space' : c.toLowerCase()] || 1) + (c !== c.toLowerCase() ? w.shift : 0), 0) / s.length + Math.random() * 0.6 }))
     .filter((o) => !used.has(o.i))
     .sort((a, b) => b.sc - a.sc);
@@ -25,7 +27,7 @@ function adaptiveLines(n: number) {
     if (c) pick[pick.length - 1] = c;
   }
   S.used.push(...pick.map((o) => o.i));
-  S.used = S.used.slice(-80);
+  S.used = S.used.slice(-NO_REPEAT);
   return pick.map((o) => o.s);
 }
 function drillLines(focus: string[], n: number) {

@@ -5,6 +5,7 @@ import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
 import { heroAnim } from '../lib/draw';
 import { allTaps, realSessions, storageOK, store, syncState, useStore } from '../lib/store';
 import { COARSE, IN_FRAME, pct } from '../lib/util';
+import { lab } from '../lib/keys';
 
 function Hero() {
   const { start, go } = useActions();
@@ -47,15 +48,15 @@ function Dashboard() {
     <>
       <section className="play">
         <button className="btn primary block" onClick={() => start('round')}>
-          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
-            Start a round<span className="sub">{S.settings.len} lines, weighted to your weak keys</span>
+          <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, textAlign: 'left' }}>
+            Start a round<span className="sub">{S.settings.len} sentences, heavy on your weak letters</span>
           </span>
           <span className="go"><Icon name="play" /></span>
         </button>
         {tk.length > 0 && (
           <button className="drillbtn" onClick={() => start('drill', tk.map((t) => t.k))}>
             <span className="keys">{tk.map((t) => <Kc key={t.k} k={t.k} size="sm" />)}</span>
-            <span className="t">Drill your trouble keys<span>Lines built from your own misses</span></span>
+            <span className="t">Drill your trouble keys<span>Word drills packed with {listKeys(tk.map((t) => t.k))}</span></span>
             <Icon name="chev" />
           </button>
         )}
@@ -112,4 +113,10 @@ export function Home() {
       )}
     </main>
   );
+}
+
+/** "C", "C and H", "C, H and U" */
+function listKeys(keys: string[]) {
+  const l = keys.map(lab);
+  return l.length > 1 ? `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}` : l[0];
 }
