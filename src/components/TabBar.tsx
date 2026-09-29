@@ -24,12 +24,19 @@ export function TabBar({ tab, onGo }: { tab: Tab; onGo: (t: Tab) => void }) {
     document.fonts?.ready.then(measure);
   }, []);
   const ai = TABS.findIndex((t) => t.id === tab);
+  // counts tab switches (not the first render) so the highlight's squish replays on each one
+  const [switches, setSwitches] = useState(-1);
+  const prevTab = useRef(tab);
+  useLayoutEffect(() => {
+    if (prevTab.current !== tab) setSwitches((n) => n + 1);
+    prevTab.current = tab;
+  }, [tab]);
   const widths = TABS.map((_, i) => PAD * 2 + ICON + (lw && i === ai ? GAP + lw[i] : 0));
   const x = widths.slice(0, ai).reduce((a, w) => a + w + SEP, 0);
   return (
     <nav className={'tabbar' + (lw ? ' ready' : '')} aria-label="Sections">
-      <div className="in">
-        {lw && <span className="tab-ind" aria-hidden="true" style={{ width: widths[ai], transform: `translateX(${x}px)` }} />}
+      <div className="in glass">
+        {lw && <span className="tab-ind" aria-hidden="true" data-flip={switches < 0 ? undefined : switches % 2} style={{ width: widths[ai], transform: `translateX(${x}px)` }} />}
         {TABS.map((t, i) => (
           <button key={t.id} className="tab" aria-label={t.label} aria-current={t.id === tab ? 'page' : 'false'} style={lw ? { width: widths[i] } : undefined} onClick={() => onGo(t.id)}>
             <Icon name={t.icon} />

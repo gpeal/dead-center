@@ -217,15 +217,6 @@ export async function cloudInit() {
     setSync('error');
   }
 }
-export function syncText() {
-  return {
-    on: 'Synced to your Claude account.',
-    loading: 'Connecting to your account…',
-    off: IN_FRAME ? 'Sign in to claude.ai to sync. Until then it stays in this browser.' : 'Saved on this device.',
-    denied: 'View-only access, so progress stays in this browser.',
-    error: 'Account unreachable. Saved here; syncs after your next round.',
-  }[SYNC.state];
-}
 // give up waiting on the account after a while so the first screen is not stuck on "Loading"
 setTimeout(() => {
   if (SYNC.state === 'loading') setSync('off');

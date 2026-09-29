@@ -5,7 +5,7 @@ import { masteryLabel, statsFor, toneColor } from '../lib/analysis';
 import { buzz, toast } from '../lib/feedback';
 import { modeName } from '../lib/game';
 import { glyph, lab, TRAINABLE } from '../lib/keys';
-import { dataset, fresh, hydrate, replaceState, save, store, syncText, useStore, type Settings } from '../lib/store';
+import { dataset, fresh, hydrate, replaceState, save, store, useStore, type Settings } from '../lib/store';
 import { pct, relDate } from '../lib/util';
 
 const dateLabel = (ts: number) => relDate(ts).replace(/ \d.*$/, '');
@@ -101,7 +101,6 @@ function SettingsCard() {
     <section className="card settings">
       <div className="set"><div className="t"><b>Key clicks</b><span>Click on tap, thud on miss</span></div><Switch id="sound" label="Key clicks" /></div>
       <div className="set"><div className="t"><b>Haptics</b><span>Where supported</span></div><Switch id="haptics" label="Haptics" /></div>
-      <div className="set"><div className="t"><b>Progress</b><span>{syncText()}</span></div></div>
       <div className="set">
         <div className="t"><b>Round length</b><span>Lines per round</span></div>
         <div className="seg small" role="group" aria-label="Round length">
@@ -180,7 +179,6 @@ export function Progress() {
       </section>
       <SectionH title="Settings" id="settings" />
       <SettingsCard />
-      <p className="foot">Measures raw aim. The real iOS keyboard enlarges likely keys, so everyday typing is more forgiving.</p>
     </main>
   );
 }

@@ -144,7 +144,14 @@ button.rrow:active{background:var(--surface-2)}
    crescent at the corners. */
 /* ---------- tab bar ---------- */
 .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));pointer-events:none}
-.tabbar .in{pointer-events:auto;display:flex;gap:4px;padding:6px;border-radius:22px;background:color-mix(in srgb,var(--surface) 86%,transparent);backdrop-filter:blur(18px) saturate(1.6);-webkit-backdrop-filter:blur(18px) saturate(1.6);box-shadow:0 0 0 1px var(--line),0 12px 30px -10px rgba(0,0,0,.25)}
+/* ---------- glass (an approximation of iOS Liquid Glass: Safari cannot bend light, so this is frost, rim and depth) ---------- */
+:root{--glass-tint:color-mix(in srgb,var(--surface) 66%,transparent);--glass-rim-a:rgba(255,255,255,.8);--glass-rim-b:rgba(255,255,255,.28);--glass-glow:rgba(255,255,255,.4);--glass-shadow:0 12px 32px -12px rgba(15,21,34,.35),0 2px 6px rgba(15,21,34,.08)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass-tint:color-mix(in srgb,var(--surface) 50%,transparent);--glass-rim-a:rgba(255,255,255,.24);--glass-rim-b:rgba(255,255,255,.07);--glass-glow:rgba(255,255,255,.06);--glass-shadow:0 14px 34px -12px rgba(0,0,0,.65),0 2px 6px rgba(0,0,0,.3)}}
+:root[data-theme="dark"]{--glass-tint:color-mix(in srgb,var(--surface) 50%,transparent);--glass-rim-a:rgba(255,255,255,.24);--glass-rim-b:rgba(255,255,255,.07);--glass-glow:rgba(255,255,255,.06);--glass-shadow:0 14px 34px -12px rgba(0,0,0,.65),0 2px 6px rgba(0,0,0,.3)}
+/* the rim runs all the way around (brighter at two opposite corners), never along one side. Keep -webkit-backdrop-filter
+   before backdrop-filter: the minifier merges the pair and drops whichever comes first. */
+.glass{border:1px solid transparent;background:linear-gradient(var(--glass-tint),var(--glass-tint)) padding-box,linear-gradient(135deg,var(--glass-rim-a),var(--glass-rim-b) 35%,var(--glass-rim-b) 65%,var(--glass-rim-a)) border-box;-webkit-backdrop-filter:blur(24px) saturate(1.9) brightness(1.04);backdrop-filter:blur(24px) saturate(1.9) brightness(1.04);box-shadow:inset 0 0 14px var(--glass-glow),var(--glass-shadow)}
+.tabbar .in{pointer-events:auto;display:flex;gap:4px;padding:5px;border-radius:23px}
 .tabbar .in{position:relative}
 .tab{position:relative;z-index:1;display:flex;align-items:center;gap:7px;height:44px;padding-inline:14px;border-radius:16px;color:var(--muted);font-weight:600;font-size:14px;white-space:nowrap;transition:background .2s,color .2s}
 .tab svg{width:20px;height:20px;flex:none;transition:transform .2s}
@@ -160,7 +167,12 @@ button.rrow:active{background:var(--surface-2)}
 .tabbar.ready .tab[aria-current="page"] .l{opacity:1;transform:none;transition:opacity .25s .08s,transform var(--tab-dur) var(--tab-ease)}
 .tab-measure{position:absolute;visibility:hidden;pointer-events:none;white-space:nowrap;font-weight:600;font-size:14px}
 .tab-measure span{position:absolute}
-.tab-ind{position:absolute;left:6px;top:6px;height:44px;border-radius:16px;background:var(--accent-soft);transition:transform var(--tab-dur) var(--tab-ease),width var(--tab-dur) var(--tab-ease)}
+.tab-ind{position:absolute;left:5px;top:5px;height:44px;border-radius:17px;background:color-mix(in srgb,var(--accent) 17%,transparent);box-shadow:inset 0 0 0 .5px color-mix(in srgb,var(--accent) 30%,transparent),inset 0 0 12px color-mix(in srgb,var(--accent) 14%,transparent);transition:transform var(--tab-dur) var(--tab-ease),width var(--tab-dur) var(--tab-ease)}
+/* the highlight squishes as it slides, like a drop of liquid; two identical animations so each switch restarts it */
+.tab-ind[data-flip="0"]{animation:tabSquishA var(--tab-dur) ease-out}
+.tab-ind[data-flip="1"]{animation:tabSquishB var(--tab-dur) ease-out}
+@keyframes tabSquishA{0%{scale:1 1}35%{scale:1.06 .88}70%{scale:.98 1.03}100%{scale:1 1}}
+@keyframes tabSquishB{0%{scale:1 1}35%{scale:1.06 .88}70%{scale:.98 1.03}100%{scale:1 1}}
 
 /* ---------- map ---------- */
 .seg{display:flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px}
@@ -345,7 +357,7 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 @keyframes toastIn{from{opacity:0;transform:translate(-50%,-20px) scale(.95)}}
 #confetti{position:fixed;inset:0;z-index:95;pointer-events:none;width:100%;height:100%}
 .hapt{position:fixed;left:-200px;top:0;opacity:0;pointer-events:none}
-.updbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:16px;background:var(--ink);color:var(--bg);box-shadow:0 12px 30px rgba(0,0,0,.3);font-weight:600;font-size:14px;white-space:nowrap;animation:updIn .45s cubic-bezier(.2,1.4,.4,1)}
+.updbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 82px);z-index:30;transform:translateX(-50%);display:flex;align-items:center;gap:12px;padding:6px 6px 6px 16px;border-radius:18px;color:var(--ink);font-weight:600;font-size:14px;white-space:nowrap;animation:updIn .45s cubic-bezier(.2,1.4,.4,1)}
 @keyframes updIn{from{opacity:0;transform:translate(-50%,20px) scale(.95)}}
 .updbar .btn{height:34px;padding-inline:14px;font-size:14px;border-radius:11px;box-shadow:none}
 /* the floating banner hides while typing and on results; results shows it inline under its buttons instead */
