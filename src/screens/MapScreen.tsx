@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
-import { SectionH, Topbar, useActions, useScheme } from '../components/common';
+import { SectionH, Topbar, useActions, useScheme, TrendPill } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
-import { masteryLabel, patterns, statsFor, toneColor } from '../lib/analysis';
+import { ALL, RECENT, keyTrend, masteryLabel, patterns, statsFor, toneColor } from '../lib/analysis';
 import { drawMap, type MapMode } from '../lib/draw';
 import { glyph, hitTest, lab, TRAINABLE } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
@@ -10,24 +10,25 @@ import { pct } from '../lib/util';
 
 const MODES: [MapMode, string][] = [['heat', 'Heat'], ['aim', 'Aim'], ['miss', 'Misses']];
 
-function Legend({ mode }: { mode: MapMode }) {
+function Legend({ mode, recent, taps }: { mode: MapMode; recent: boolean; taps: number }) {
+  const note = recent ? 'recent taps count most' : `all ${taps.toLocaleString()} taps`;
   if (mode === 'heat')
     return (
       <div className="legend">
         <span>Fewer taps</span>
         <span className="ramp" style={{ background: 'linear-gradient(90deg,rgba(36,88,240,.25),rgba(80,140,255,.7),rgba(245,179,1,.85),rgba(229,72,77,.9),rgb(170,20,50))' }} />
-        <span>More</span>
+        <span>More · {note}</span>
       </div>
     );
   if (mode === 'aim')
     return (
       <div className="legend">
-        <span className="dot" style={{ background: 'var(--green)' }} />under 1.6 pt <span className="dot" style={{ background: 'var(--gold)' }} />1.6–3.4 pt <span className="dot" style={{ background: 'var(--red)' }} />over 3.4 pt <span>· line = drift, ring = spread</span>
+        <span className="dot" style={{ background: 'var(--green)' }} />under 1.6 pt <span className="dot" style={{ background: 'var(--gold)' }} />1.6–3.4 pt <span className="dot" style={{ background: 'var(--red)' }} />over 3.4 pt <span>· line = drift, ring = spread{recent ? ', faint = earlier' : ''}</span>
       </div>
     );
   return (
     <div className="legend">
-      <span className="dot" style={{ background: 'var(--green)' }} />under 3% <span className="dot" style={{ background: 'var(--gold)' }} />3–9% <span className="dot" style={{ background: 'var(--red)' }} />over 9% <span>of taps missed</span>
+      <span className="dot" style={{ background: 'var(--green)' }} />under 3% <span className="dot" style={{ background: 'var(--gold)' }} />3–9% <span className="dot" style={{ background: 'var(--red)' }} />over 9% <span>of taps missed · {note}</span>
     </div>
   );
 }
@@ -36,24 +37,30 @@ export function MapScreen() {
   const version = useStore();
   const { start, openKey } = useActions();
   const [mode, setMode] = useState<MapMode>('heat');
+  const [range, setRange] = useState<'recent' | 'all'>('recent');
+  const half = range === 'recent' ? RECENT : ALL;
   const scheme = useScheme();
   const ds = useMemo(() => dataset(), [version]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
-    if (cv) drawMap(cv, kb, ds.taps, mode);
-  }, [ds, mode, scheme]);
+    if (cv) drawMap(cv, kb, ds.taps, mode, half);
+  }, [ds, mode, half, scheme]);
   const onTap = useCallback((x: number, y: number) => {
     const k = hitTest(x, y);
     if (TRAINABLE.includes(k)) openKey(k);
   }, [openKey]);
-  const low = useMemo(() => TRAINABLE.map((k) => statsFor(ds.taps, k, 100)).filter((s) => s.n >= 5).sort((a, b) => a.acc - b.acc).slice(0, 5), [ds]);
+  const low = useMemo(() => TRAINABLE.map((k) => statsFor(ds.taps, k, half)).filter((s) => s.n >= 5).sort((a, b) => a.acc - b.acc).slice(0, 5), [ds, half]);
   const pats = useMemo(() => patterns(ds.taps), [ds]);
 
   return (
     <main className="screen">
       <Topbar />
       <SectionH title="Your tap map">
-        {ds.sample ? <span className="pill sample">Sample data</span> : <span className="eyebrow">{ds.taps.length.toLocaleString()} taps</span>}
+        <div className="seg small" role="group" aria-label="Which taps">
+          {([['recent', 'Recent'], ['all', 'All time']] as const).map(([r, l]) => (
+            <button key={r} aria-pressed={range === r} onClick={() => setRange(r)}>{l}</button>
+          ))}
+        </div>
       </SectionH>
       {ds.sample && (
         <div className="samplebar">
@@ -70,16 +77,17 @@ export function MapScreen() {
         <KeyboardView className="mapwrap" paint={paint} onTap={onTap}>
           <canvas />
         </KeyboardView>
-        <Legend mode={mode} />
+        <Legend mode={mode} recent={range === 'recent'} taps={ds.taps.length} />
       </section>
       <SectionH title="Lowest accuracy"><span className="eyebrow">Tap a key</span></SectionH>
       <section className="card" style={{ padding: '14px 16px' }}>
-        <div className="rowbars">
+        <div className={'rowbars' + (range === 'recent' ? ' trends' : '')}>
           {low.map((s) => (
             <button key={s.k} className="krowbar" aria-label={`${lab(s.k)}: ${pct(s.acc)}% accurate. Open tap map`} onClick={() => openKey(s.k)}>
               <span className="kc sm">{glyph(s.k)}</span>
               <span className="track"><i style={{ width: pct(s.acc) + '%', background: toneColor(masteryLabel(s.mastery)[1]) }} /></span>
               <span className="m">{pct(s.acc)}%</span>
+              {range === 'recent' && <TrendPill tr={keyTrend(ds.taps, s.k)} />}
             </button>
           ))}
         </div>

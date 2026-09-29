@@ -183,6 +183,8 @@ button.rrow:active{background:var(--surface-2)}
 .rowbars .m{font:500 12px/1 var(--f-mono);text-align:right}
 .krowbar{grid-column:1/-1;display:grid;grid-template-columns:62px 1fr 44px;gap:10px;align-items:center;width:calc(100% + 16px);margin:-4px -8px;padding:4px 8px;border-radius:12px;text-align:left;transition:background .15s,transform .12s}
 .krowbar .kc{justify-self:start}
+.rowbars.trends .krowbar{grid-template-columns:62px 1fr 44px 56px}
+.krowbar .trend{justify-self:end}
 .krowbar:active{background:var(--surface-2);transform:scale(.985)}
 @media (hover:hover){.krowbar:hover{background:var(--surface-2)}}
 .samplebar{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--gold-soft);color:var(--gold-ink);font-size:13.5px;line-height:1.35}

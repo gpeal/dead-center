@@ -134,7 +134,7 @@ export function Progress() {
   const { taps: t, sessions: rs } = ds;
   const hits = t.filter((x) => x.h === x.k).length;
   const bestW = Math.max(0, ...rs.map((s) => s.wpm || 0));
-  const mastery = useMemo(() => TRAINABLE.map((k) => ({ k, s: statsFor(t, k, 80) })), [t]);
+  const mastery = useMemo(() => TRAINABLE.map((k) => ({ k, s: statsFor(t, k) })), [t]);
   return (
     <main className="screen">
       <Topbar />

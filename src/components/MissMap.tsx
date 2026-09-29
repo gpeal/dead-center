@@ -1,7 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { useActions, useScheme } from './common';
 import { KeyboardView } from './KeyboardView';
-import { statsFor } from '../lib/analysis';
+import { ALL, statsFor } from '../lib/analysis';
 import { drawLoupes, drawMissKeys, placeLoupes, type Loupe } from '../lib/draw';
 import { KEY, lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
@@ -31,7 +31,7 @@ export function MissMap({ keys, taps }: { keys: [string, Tap[]][]; taps: Tap[] }
       return { k, x: xs[i], label: `${lab(k)} ×${arr.length} → ${lab(top[0])}` };
     });
     setLayout({ loupes, D: d });
-    if (over.current) drawLoupes(over.current, kb, loupes, (k) => statsFor(taps, k, 1000), d, strip);
+    if (over.current) drawLoupes(over.current, kb, loupes, (k) => statsFor(taps, k, ALL), d, strip);
   }, [keys, taps, scheme]);
 
   return (

@@ -110,7 +110,7 @@ export function KeySheet({ k, onClose }: { k: string; onClose: () => void }) {
   const { start } = useActions();
   const scheme = useScheme();
   const ds = useMemo(() => dataset(), []);
-  const s = useMemo(() => statsFor(ds.taps, k, 120), [ds, k]);
+  const s = useMemo(() => statsFor(ds.taps, k), [ds, k]);
   const dg = diagnose(s);
   const [ml, mt] = masteryLabel(s.mastery);
   const imp = ds.sample ? null : drillImpact(ds.taps, ds.sessions, k);
@@ -127,7 +127,7 @@ export function KeySheet({ k, onClose }: { k: string; onClose: () => void }) {
     <Sheet onClose={onClose}>
       <div className="kd-head">
         <Kc k={k} size="lg" />
-        <div><h2>{dg.headline}</h2><div className="sub">{s.n} taps{ds.sample ? ' · sample data' : ''}</div></div>
+        <div><h2>{dg.headline}</h2><div className="sub">{s.n} recent taps{ds.sample ? ' · sample data' : ''}</div></div>
         <span className={'pill ' + mt}>{s.n >= 6 ? ml : 'New'}</span>
       </div>
       <canvas ref={cv} className="scatter" role="img" aria-label={`Where your ${lab(k)} taps landed`} />

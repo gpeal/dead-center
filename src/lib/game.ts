@@ -8,7 +8,7 @@ import { store, allTaps, type Session, type Mode } from './store';
 function weights() {
   const t = allTaps(), w: Record<string, number> = {};
   for (const k of TRAINABLE) {
-    const s = statsFor(t, k, 60);
+    const s = statsFor(t, k);
     w[k] = s.n >= 6 ? 1 + 4 * (1 - s.acc) + 1.5 * (1 - s.prec) : 1.3;
   }
   return w;
@@ -31,7 +31,7 @@ function adaptiveLines(n: number) {
 function drillLines(focus: string[], n: number) {
   const F = new Set(focus.filter((k) => k !== 'space' && k !== 'shift')), sp = focus.includes('space'), sh = focus.includes('shift'), t = allTaps(), pairs: string[] = [];
   for (const k of focus) {
-    const s = statsFor(t, k, 80);
+    const s = statsFor(t, k);
     const top = Object.entries(s.conf).sort((a, b) => b[1] - a[1])[0];
     if (top && KEY[top[0]] && KEY[top[0]].type === 'letter' && k !== 'space') pairs.push(k + top[0], top[0] + k);
   }

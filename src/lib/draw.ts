@@ -1,5 +1,5 @@
 import { KEYS, KEY, KH, PITCH, TRAINABLE, hitTest } from './keys';
-import { statsFor, type KeyStats } from './analysis';
+import { ALL, RECENT, SLOW, recencyWeights, statsFor, type KeyStats } from './analysis';
 import { clamp, cssVar, fmt1, gauss, pct, reduceMotion, rng } from './util';
 import type { Kb } from './keyboard';
 import type { Tap } from './store';
@@ -31,7 +31,8 @@ function sizeCanvas(cv: HTMLCanvasElement, kb: Kb) {
   c.scale(dpr, dpr);
   return { c, W, H, dpr };
 }
-export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMode) {
+/** The all-taps map. `half` is the recency half-life (RECENT fades older taps; ALL treats every tap the same). */
+export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMode, half = RECENT) {
   const { c, W, H, dpr } = sizeCanvas(cv, kb);
   c.clearRect(0, 0, W, H);
   const P = (x: number, y: number) => kb.toPx(x, y);
@@ -41,13 +42,16 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
     off.width = W * dpr;
     off.height = H * dpr;
     const o = off.getContext('2d')!;
-    const rad = 8.5 * kb.sx * dpr, list = taps.slice(-4000), a = clamp(3 / Math.sqrt(list.length + 1), 0.05, 0.5);
-    for (const t of list) {
-      const key = KEY[t.k];
-      if (!key) continue;
+    const wts = recencyWeights(taps, half);
+    let total = 0;
+    for (const w of wts) total += w;
+    const rad = 8.5 * kb.sx * dpr, a = clamp(3 / Math.sqrt(total + 1), 0.05, 0.5);
+    for (let i = Math.max(0, taps.length - 8000); i < taps.length; i++) {
+      const t = taps[i], key = KEY[t.k];
+      if (!key || wts[i] < 0.03) continue;
       const p = P(key.cx + t.dx, key.cy + t.dy), x = p.x * dpr, y = p.y * dpr;
       const g = o.createRadialGradient(x, y, 0, x, y, rad);
-      g.addColorStop(0, `rgba(0,0,0,${a})`);
+      g.addColorStop(0, `rgba(0,0,0,${a * wts[i]})`);
       g.addColorStop(1, 'rgba(0,0,0,0)');
       o.fillStyle = g;
       o.fillRect(x - rad, y - rad, rad * 2, rad * 2);
@@ -79,9 +83,22 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
   } else if (mode === 'aim') {
     const gold = cssVar('--gold'), green = cssVar('--green'), red = cssVar('--red'), ink = cssVar('--kb-ink');
     for (const k of TRAINABLE) {
-      const s = statsFor(taps, k, 100);
+      const s = statsFor(taps, k, half);
       if (s.n < 4) continue;
       const key = KEY[k], cp = P(key.cx, key.cy), mp = P(key.cx + s.mx, key.cy + s.my);
+      // the long-run average, faint, so the recent arrow shows which way it has moved
+      if (half !== ALL) {
+        const slow = statsFor(taps, k, SLOW);
+        if (slow.n >= 12 && Math.hypot(slow.mx - s.mx, slow.my - s.my) > 0.6) {
+          const op = P(key.cx + slow.mx, key.cy + slow.my);
+          c.globalAlpha = 0.35;
+          c.strokeStyle = ink;
+          c.lineWidth = 1.5;
+          c.beginPath(); c.moveTo(cp.x, cp.y); c.lineTo(op.x, op.y); c.stroke();
+          c.beginPath(); c.arc(op.x, op.y, 2.6, 0, 7); c.stroke();
+          c.globalAlpha = 1;
+        }
+      }
       const mag = Math.hypot(s.mx, s.my), col = mag < 1.6 ? green : mag < 3.4 ? gold : red;
       c.globalAlpha = 0.9;
       c.strokeStyle = col;
@@ -108,7 +125,7 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
     c.font = `500 ${Math.round(9 * kb.sx)}px ${cssVar('--f-mono')}`;
     c.textAlign = 'center';
     for (const k of TRAINABLE) {
-      const s = statsFor(taps, k, 100);
+      const s = statsFor(taps, k, half);
       if (s.n < 4) continue;
       const key = KEY[k], e = 1 - s.acc, col = e < 0.03 ? green : e < 0.09 ? gold : red;
       kb.keyEls[k].style.background = `color-mix(in srgb, ${col} ${Math.round(clamp(18 + e * 260, 18, 70))}%, var(--kb-key))`;

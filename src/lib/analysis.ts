@@ -3,31 +3,54 @@ import { median, pct, fmt1 } from './util';
 import type { Tap, Session } from './store';
 
 export interface KeyStats {
-  k: string; n: number; hits: number; acc: number; prec: number; mastery: number;
+  /** n and hits are raw counts of the taps considered; acc, prec, drift and spread are recency weighted. */
+  k: string; n: number; neff: number; hits: number; acc: number; prec: number; mastery: number;
   mx: number; my: number; sdx: number; sdy: number; conf: Record<string, number>; dtH: number[]; dtM: number[]; arr: Tap[];
 }
-export function statsFor(taps: Tap[], k: string, win = 100): KeyStats {
+/**
+ * Recency weighting (an exponential moving average): each tap on a key counts half as much for every RECENT later
+ * taps on that same key. Decaying per key rather than per round keeps rare letters like Q from fading to nothing.
+ * RECENT is "how you type now"; SLOW is the long-run baseline that changes are measured against; ALL is unweighted.
+ */
+export const RECENT = 30, SLOW = 150, ALL = Infinity;
+export function statsFor(taps: Tap[], k: string, half = RECENT): KeyStats {
+  const horizon = half === ALL ? Infinity : Math.round(half * 4); // older taps weigh under 7% and are skipped
   const arr: Tap[] = [];
-  for (let i = taps.length - 1; i >= 0 && arr.length < win; i--) if (taps[i].k === k) arr.push(taps[i]);
+  for (let i = taps.length - 1; i >= 0 && arr.length < horizon; i--) if (taps[i].k === k) arr.push(taps[i]);
   arr.reverse();
   const n = arr.length, key = KEY[k];
-  if (!n) return { k, n: 0, hits: 0, acc: 0, prec: 0, mastery: 0, mx: 0, my: 0, sdx: 0, sdy: 0, conf: {}, dtH: [], dtM: [], arr };
-  let hits = 0, sx = 0, sy = 0, sxx = 0, syy = 0, ps = 0;
+  if (!n) return { k, n: 0, neff: 0, hits: 0, acc: 0, prec: 0, mastery: 0, mx: 0, my: 0, sdx: 0, sdy: 0, conf: {}, dtH: [], dtM: [], arr };
+  let W = 0, W2 = 0, hits = 0, wHit = 0, sx = 0, sy = 0, sxx = 0, syy = 0, ps = 0;
   const conf: Record<string, number> = {}, dtH: number[] = [], dtM: number[] = [];
-  for (const t of arr) {
-    sx += t.dx; sy += t.dy; sxx += t.dx * t.dx; syy += t.dy * t.dy;
+  arr.forEach((t, i) => {
+    const w = half === ALL ? 1 : Math.pow(0.5, (n - 1 - i) / half);
+    W += w; W2 += w * w;
+    sx += w * t.dx; sy += w * t.dy; sxx += w * t.dx * t.dx; syy += w * t.dy * t.dy;
     if (t.h === k) {
       hits++;
-      ps += 1 - Math.min(1, edist(t.dx, t.dy, key));
+      wHit += w;
+      ps += w * (1 - Math.min(1, edist(t.dx, t.dy, key)));
       if (t.dt > 0 && t.dt < 2500) dtH.push(t.dt);
     } else {
       conf[t.h] = (conf[t.h] || 0) + 1;
       if (t.dt > 0 && t.dt < 2500) dtM.push(t.dt);
     }
+  });
+  const mx = sx / W, my = sy / W, sdx = Math.sqrt(Math.max(0, sxx / W - mx * mx)), sdy = Math.sqrt(Math.max(0, syy / W - my * my));
+  const acc = wHit / W, prec = wHit ? ps / wHit : 0;
+  // effective sample size: how many equally weighted taps the weighted ones are worth
+  const neff = (W * W) / W2;
+  return { k, n, neff, hits, acc, prec, mx, my, sdx, sdy, conf, dtH, dtM, arr, mastery: Math.round(100 * (0.78 * acc + 0.22 * prec)) };
+}
+/** Each tap's recency weight (see statsFor), aligned with `taps`. */
+export function recencyWeights(taps: Tap[], half = RECENT) {
+  const w = new Float32Array(taps.length), seen: Record<string, number> = {};
+  for (let i = taps.length - 1; i >= 0; i--) {
+    const k = taps[i].k, age = seen[k] || 0;
+    seen[k] = age + 1;
+    w[i] = half === ALL ? 1 : Math.pow(0.5, age / half);
   }
-  const mx = sx / n, my = sy / n, sdx = Math.sqrt(Math.max(0, sxx / n - mx * mx)), sdy = Math.sqrt(Math.max(0, syy / n - my * my));
-  const acc = hits / n, prec = hits ? ps / hits : 0;
-  return { k, n, hits, acc, prec, mx, my, sdx, sdy, conf, dtH, dtM, arr, mastery: Math.round(100 * (0.78 * acc + 0.22 * prec)) };
+  return w;
 }
 /* Thumb technique phrases shared by the key sheet, the Map patterns and the round tip. */
 const HOVER = 'Hover your thumb just above the glass between letters so each tap is a short, straight drop.';
@@ -45,13 +68,11 @@ export function sessionSeries(taps: Tap[], k: string) {
   }
   return [...by.entries()].filter(([, o]) => o.n >= 3).sort((a, b) => a[0] - b[0]).map(([sid, o]) => ({ sid, acc: o.h / o.n }));
 }
+/** Recent accuracy minus long-run accuracy for a key, or null until there are enough taps to compare. */
 export function keyTrend(taps: Tap[], k: string) {
-  const arr = taps.filter((t) => t.k === k);
-  if (arr.length < 20) return null;
-  const m = Math.min(50, Math.floor(arr.length / 2));
-  const a = arr.slice(-2 * m, -m), b = arr.slice(-m);
-  const acc = (x: Tap[]) => x.filter((t) => t.h === k).length / x.length;
-  return acc(b) - acc(a);
+  const slow = statsFor(taps, k, SLOW);
+  if (slow.n < 20) return null;
+  return statsFor(taps, k, RECENT).acc - slow.acc;
 }
 export function drillImpact(taps: Tap[], sessions: Session[], k: string) {
   const first = sessions.find((s) => s.mode === 'drill' && (s.focus || '').includes(k === 'space' ? '_' : k === 'shift' ? '^' : k));
@@ -71,7 +92,7 @@ export interface Diagnosis { headline: string; short: string; why: string[]; fix
 export function diagnose(s: KeyStats): Diagnosis {
   const k = s.k, key = KEY[k], L = lab(k);
   if (!s.n || s.n < 6) return { headline: `Not enough ${L} taps yet`, short: 'Needs more data', why: [`${L} needs about 6 taps for a reliable pattern.`], fixes: [], tone: 'flat' };
-  const hw = key.w / 2, hh = key.h / 2, bx = s.mx / hw, by = s.my / hh, se = (v: number) => v / Math.sqrt(s.n);
+  const hw = key.w / 2, hh = key.h / 2, bx = s.mx / hw, by = s.my / hh, se = (v: number) => v / Math.sqrt(s.neff);
   const sigX = Math.abs(bx) > 0.16 && Math.abs(s.mx) > 2 * se(s.sdx) && Math.abs(s.mx) >= 1, sigY = Math.abs(by) > 0.16 && Math.abs(s.my) > 2 * se(s.sdy) && Math.abs(s.my) >= 1;
   const misses = s.n - s.hits, confs = Object.entries(s.conf).sort((a, b) => b[1] - a[1]), top = confs[0];
   const why: string[] = [], fixes: string[] = [];
@@ -129,7 +150,7 @@ function sideTip(side: 'left' | 'right', taps: Tap[]) {
 export function troubleKeys(taps: Tap[], max = 3) {
   const out: { k: string; s: KeyStats; pri: number }[] = [];
   for (const k of TRAINABLE) {
-    const s = statsFor(taps, k, 80);
+    const s = statsFor(taps, k);
     if (s.n >= 8 && (s.acc < 0.97 || s.mastery < 86)) out.push({ k, s, pri: (1 - s.acc) * 2 + (1 - s.prec) * 0.5 + Math.min(s.n, 60) / 600 });
   }
   return out.sort((a, b) => b.pri - a.pri).slice(0, max);

@@ -28,7 +28,7 @@ export function makeSample(): Dataset {
       let prev = '';
       for (const ch of line) {
         const k = ch === ' ' ? 'space' : ch.toLowerCase(), key = KEY[k];
-        const [bx, by] = bias(k), sd = 3.3 * imp + 1.5;
+        const [bx, by] = bias(k), sd = 9 * imp + 3.5; // early rounds land around 85% and improve to about 99% over the two weeks
         for (let tries = 0; tries < 3; tries++) {
           const dx = bx * imp + gauss(r) * sd * (k === 'space' ? 3 : 1), dy = by * imp + gauss(r) * sd * 0.85;
           const hit = hitTest(key.cx + dx, key.cy + dy);
