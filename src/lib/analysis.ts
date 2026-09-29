@@ -1,6 +1,6 @@
 import { KEY, TRAINABLE, LEFT, RIGHT, HANDOFF, EDGE, edist, lab } from './keys';
 import { median, pct, fmt1 } from './util';
-import type { Tap, Session } from './store';
+import { store, type Tap, type Session } from './store';
 
 export interface KeyStats {
   /** n and hits are raw counts of the taps considered; acc, prec, drift and spread are recency weighted. */
@@ -8,12 +8,15 @@ export interface KeyStats {
   mx: number; my: number; sdx: number; sdy: number; conf: Record<string, number>; dtH: number[]; dtM: number[]; arr: Tap[];
 }
 /**
- * Recency weighting (an exponential moving average): each tap on a key counts half as much for every RECENT later
- * taps on that same key. Decaying per key rather than per round keeps rare letters like Q from fading to nothing.
- * RECENT is "how you type now"; SLOW is the long-run baseline that changes are measured against; ALL is unweighted.
+ * Recency weighting (an exponential moving average): each tap on a key counts half as much for every recentHalf()
+ * later taps on that same key (set in Settings). Decaying per key rather than per round keeps rare letters like Q from
+ * fading to nothing. recentHalf() is "how you type now"; slowHalf() is the long-run baseline that changes are measured
+ * against, always at least five times longer; ALL is unweighted.
  */
-export const RECENT = 30, SLOW = 150, ALL = Infinity;
-export function statsFor(taps: Tap[], k: string, half = RECENT): KeyStats {
+export const ALL = Infinity;
+export const recentHalf = () => store.S.settings.half || 30;
+export const slowHalf = () => Math.max(150, recentHalf() * 5);
+export function statsFor(taps: Tap[], k: string, half = recentHalf()): KeyStats {
   const horizon = half === ALL ? Infinity : Math.round(half * 4); // older taps weigh under 7% and are skipped
   const arr: Tap[] = [];
   for (let i = taps.length - 1; i >= 0 && arr.length < horizon; i--) if (taps[i].k === k) arr.push(taps[i]);
@@ -43,7 +46,7 @@ export function statsFor(taps: Tap[], k: string, half = RECENT): KeyStats {
   return { k, n, neff, hits, acc, prec, mx, my, sdx, sdy, conf, dtH, dtM, arr, mastery: Math.round(100 * (0.78 * acc + 0.22 * prec)) };
 }
 /** Each tap's recency weight (see statsFor), aligned with `taps`. */
-export function recencyWeights(taps: Tap[], half = RECENT) {
+export function recencyWeights(taps: Tap[], half = recentHalf()) {
   const w = new Float32Array(taps.length), seen: Record<string, number> = {};
   for (let i = taps.length - 1; i >= 0; i--) {
     const k = taps[i].k, age = seen[k] || 0;
@@ -70,9 +73,9 @@ export function sessionSeries(taps: Tap[], k: string) {
 }
 /** Recent accuracy minus long-run accuracy for a key, or null until there are enough taps to compare. */
 export function keyTrend(taps: Tap[], k: string) {
-  const slow = statsFor(taps, k, SLOW);
+  const slow = statsFor(taps, k, slowHalf());
   if (slow.n < 20) return null;
-  return statsFor(taps, k, RECENT).acc - slow.acc;
+  return statsFor(taps, k).acc - slow.acc;
 }
 export function drillImpact(taps: Tap[], sessions: Session[], k: string) {
   const first = sessions.find((s) => s.mode === 'drill' && (s.focus || '').includes(k === 'space' ? '_' : k === 'shift' ? '^' : k));

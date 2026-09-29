@@ -110,6 +110,14 @@ function SettingsCard() {
         </div>
       </div>
       <div className="set">
+        <div className="t"><b>Recent window</b><span>Half-life, taps per key</span></div>
+        <div className="seg small" role="group" aria-label="Recent window">
+          {([15, 30, 60] as const).map((v) => (
+            <button key={v} aria-pressed={(S.settings.half || 30) === v} onClick={() => { S.settings.half = v; save(); }}>{v}</button>
+          ))}
+        </div>
+      </div>
+      <div className="set">
         <div className="t"><b>Backup</b><span>Move data to another browser</span></div>
         <button className="btn ghost" style={{ height: 36, fontSize: 13, paddingInline: 12 }} onClick={backup}><Icon name="copy" />Copy</button>
       </div>

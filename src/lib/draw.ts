@@ -1,5 +1,5 @@
 import { KEYS, KEY, KH, PITCH, TRAINABLE, hitTest } from './keys';
-import { ALL, RECENT, SLOW, recencyWeights, statsFor, type KeyStats } from './analysis';
+import { ALL, recencyWeights, recentHalf, slowHalf, statsFor, type KeyStats } from './analysis';
 import { clamp, cssVar, fmt1, gauss, pct, reduceMotion, rng } from './util';
 import type { Kb } from './keyboard';
 import type { Tap } from './store';
@@ -31,8 +31,8 @@ function sizeCanvas(cv: HTMLCanvasElement, kb: Kb) {
   c.scale(dpr, dpr);
   return { c, W, H, dpr };
 }
-/** The all-taps map. `half` is the recency half-life (RECENT fades older taps; ALL treats every tap the same). */
-export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMode, half = RECENT) {
+/** The all-taps map. `half` is the recency half-life (recentHalf() fades older taps; ALL treats every tap the same). */
+export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMode, half = recentHalf()) {
   const { c, W, H, dpr } = sizeCanvas(cv, kb);
   c.clearRect(0, 0, W, H);
   const P = (x: number, y: number) => kb.toPx(x, y);
@@ -88,7 +88,7 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
       const key = KEY[k], cp = P(key.cx, key.cy), mp = P(key.cx + s.mx, key.cy + s.my);
       // the long-run average, faint, so the recent arrow shows which way it has moved
       if (half !== ALL) {
-        const slow = statsFor(taps, k, SLOW);
+        const slow = statsFor(taps, k, slowHalf());
         if (slow.n >= 12 && Math.hypot(slow.mx - s.mx, slow.my - s.my) > 0.6) {
           const op = P(key.cx + slow.mx, key.cy + slow.my);
           c.globalAlpha = 0.35;

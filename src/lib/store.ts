@@ -11,7 +11,8 @@ export interface Session {
   id: number; ts: number; mode: Mode; focus: string; n: number; hits: number; acc: number;
   prec?: number; wpm?: number; combo?: number; bull?: number; dur?: number; caseSlips?: number; realigns?: number; partial?: boolean;
 }
-export interface Settings { sound: boolean; haptics: boolean; dots: boolean; len: number }
+/** half: the recency half-life, in taps per key (see statsFor in analysis.ts). */
+export interface Settings { sound: boolean; haptics: boolean; dots: boolean; len: number; half: number }
 export interface State {
   v: number; taps: TapRow[]; sessions: Session[];
   used: number[]; bests: { wpm: number; combo: number };
@@ -23,7 +24,7 @@ export interface Dataset { taps: Tap[]; sessions: Session[]; sample: boolean }
 const STORE_KEY = 'deadcenter.v1';
 export const CHUNK = 2000, CAP = 40000;
 export function fresh(): State {
-  return { v: 1, taps: [], sessions: [], used: [], bests: { wpm: 0, combo: 0 }, settings: { sound: true, haptics: true, dots: true, len: 3 }, tapBase: 0, rev: 0 };
+  return { v: 1, taps: [], sessions: [], used: [], bests: { wpm: 0, combo: 0 }, settings: { sound: true, haptics: true, dots: true, len: 3, half: 30 }, tapBase: 0, rev: 0 };
 }
 export function hydrate(raw: any): State {
   const f = fresh();

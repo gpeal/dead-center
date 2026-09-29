@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 import { SectionH, Topbar, useActions, useScheme, TrendPill } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
-import { ALL, RECENT, keyTrend, masteryLabel, patterns, statsFor, toneColor } from '../lib/analysis';
+import { ALL, keyTrend, recentHalf, masteryLabel, patterns, statsFor, toneColor } from '../lib/analysis';
 import { drawMap, type MapMode } from '../lib/draw';
 import { glyph, hitTest, lab, TRAINABLE } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
@@ -38,7 +38,7 @@ export function MapScreen() {
   const { start, openKey } = useActions();
   const [mode, setMode] = useState<MapMode>('heat');
   const [range, setRange] = useState<'recent' | 'all'>('recent');
-  const half = range === 'recent' ? RECENT : ALL;
+  const half = range === 'recent' ? recentHalf() : ALL;
   const scheme = useScheme();
   const ds = useMemo(() => dataset(), [version]);
   const paint = useCallback((kb: Kb) => {
