@@ -143,11 +143,12 @@ button.rrow:active{background:var(--surface-2)}
 /* Borders and inset lines go on all sides or none: a one-sided border on a rounded element bends into a
    crescent at the corners. */
 /* ---------- tab bar ---------- */
-.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;padding:8px 16px calc(8px + env(safe-area-inset-bottom,0px));pointer-events:none}
+/* at least 16pt below the bar: in Safari the page ends right above its toolbar, which would cut off the shadow */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;justify-content:center;padding:8px 16px max(16px, calc(8px + env(safe-area-inset-bottom,0px)));pointer-events:none}
 /* ---------- glass (an approximation of iOS Liquid Glass: Safari cannot bend light, so this is frost, rim and depth) ---------- */
-:root{--glass-tint:color-mix(in srgb,var(--surface) 66%,transparent);--glass-rim-a:rgba(255,255,255,.8);--glass-rim-b:rgba(255,255,255,.28);--glass-glow:rgba(255,255,255,.4);--glass-shadow:0 12px 32px -12px rgba(15,21,34,.35),0 2px 6px rgba(15,21,34,.08)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass-tint:color-mix(in srgb,var(--surface) 50%,transparent);--glass-rim-a:rgba(255,255,255,.24);--glass-rim-b:rgba(255,255,255,.07);--glass-glow:rgba(255,255,255,.06);--glass-shadow:0 14px 34px -12px rgba(0,0,0,.65),0 2px 6px rgba(0,0,0,.3)}}
-:root[data-theme="dark"]{--glass-tint:color-mix(in srgb,var(--surface) 50%,transparent);--glass-rim-a:rgba(255,255,255,.24);--glass-rim-b:rgba(255,255,255,.07);--glass-glow:rgba(255,255,255,.06);--glass-shadow:0 14px 34px -12px rgba(0,0,0,.65),0 2px 6px rgba(0,0,0,.3)}
+:root{--glass-tint:color-mix(in srgb,var(--surface) 66%,transparent);--glass-rim-a:rgba(255,255,255,.8);--glass-rim-b:rgba(255,255,255,.28);--glass-glow:rgba(255,255,255,.4);--glass-shadow:0 8px 20px -8px rgba(15,21,34,.3),0 2px 6px rgba(15,21,34,.08)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--glass-tint:color-mix(in srgb,var(--surface) 50%,transparent);--glass-rim-a:rgba(255,255,255,.24);--glass-rim-b:rgba(255,255,255,.07);--glass-glow:rgba(255,255,255,.06);--glass-shadow:0 8px 22px -8px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3)}}
+:root[data-theme="dark"]{--glass-tint:color-mix(in srgb,var(--surface) 50%,transparent);--glass-rim-a:rgba(255,255,255,.24);--glass-rim-b:rgba(255,255,255,.07);--glass-glow:rgba(255,255,255,.06);--glass-shadow:0 8px 22px -8px rgba(0,0,0,.6),0 2px 6px rgba(0,0,0,.3)}
 /* the rim runs all the way around (brighter at two opposite corners), never along one side. Keep -webkit-backdrop-filter
    before backdrop-filter: the minifier merges the pair and drops whichever comes first. */
 .glass{border:1px solid transparent;background:linear-gradient(var(--glass-tint),var(--glass-tint)) padding-box,linear-gradient(135deg,var(--glass-rim-a),var(--glass-rim-b) 35%,var(--glass-rim-b) 65%,var(--glass-rim-a)) border-box;-webkit-backdrop-filter:blur(24px) saturate(1.9) brightness(1.04);backdrop-filter:blur(24px) saturate(1.9) brightness(1.04);box-shadow:inset 0 0 14px var(--glass-glow),var(--glass-shadow)}
@@ -376,6 +377,16 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 .install .note{color:var(--muted);margin-top:6px}
 .install .x{width:30px;height:30px;margin-top:-4px;color:var(--muted)}
 .install .x svg{width:16px;height:16px}
+.landing{max-width:480px;margin:0 auto;min-height:100%;padding:28px 20px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:18px;animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
+.landing .brand svg{width:34px;height:34px}
+.landing h1{font:850 30px/1 var(--f-display);font-variation-settings:"wdth" 126;letter-spacing:-.02em;margin-top:6px}
+.landing > p{color:var(--ink-2)}
+.install-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.install-steps li{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-size:15px}
+.install-steps .ic{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.install-steps .ic svg{width:22px;height:22px}
+.install-steps .ic.logo svg{width:26px;height:26px}
+.install-steps small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}

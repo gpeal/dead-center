@@ -30,6 +30,7 @@ const DEFS = {
   up: { vb: '0 0 10 10', w: 9, h: 9, inner: '<path d="M5 1.5 8.5 6H1.5z" fill="currentColor"/>' },
   down: { vb: '0 0 10 10', w: 9, h: 9, inner: '<path d="M5 8.5 1.5 4h7z" fill="currentColor"/>' },
   share: line('<path d="M12 3.5v11"/><path d="M8 7.5l4-4 4 4"/><path d="M8 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/>'),
+  addbox: line('<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>'),
   copy: line('<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
 } satisfies Record<string, Def>;
 

@@ -4,8 +4,9 @@ import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/commo
 import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
 import { heroAnim } from '../lib/draw';
 import { allTaps, realSessions, storageOK, store, syncState, useStore } from '../lib/store';
-import { COARSE, IN_FRAME, pct } from '../lib/util';
+import { pct } from '../lib/util';
 import { lab } from '../lib/keys';
+import { dismissInstall, shouldSuggestInstall } from '../lib/install';
 
 function Hero() {
   const { start, go } = useActions();
@@ -21,12 +22,7 @@ function Hero() {
         <div className="hero-stage">
           <canvas ref={cv} />
         </div>
-        <p>See exactly where each tap lands on a true-size iPhone keyboard, then drill the keys you miss.</p>
-        <ol className="steps">
-          <li><div><b>Take the baseline</b> <span>· about a minute</span></div></li>
-          <li><div><b>Read your tap map</b></div></li>
-          <li><div><b>Drill your weak keys</b></div></li>
-        </ol>
+        <p>See where each tap lands on a true-size keyboard, then drill the keys you miss. The baseline takes about a minute.</p>
         <button className="btn primary block" onClick={() => start('baseline')}>
           <Icon name="play" />
           Take the baseline
@@ -35,7 +31,6 @@ function Hero() {
           Preview with sample data
         </button>
       </section>
-      {!COARSE && <p className="foot">Built for iPhone. Open it on your phone to measure your thumbs.</p>}
     </>
   );
 }
@@ -119,29 +114,13 @@ function listKeys(keys: string[]) {
   return l.length > 1 ? `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}` : l[0];
 }
 
-/* ---------- Add to Home Screen ----------
-   iOS can tell a page whether it is running from the Home Screen, but not whether it has been added there, and it has
-   no install prompt a page can trigger. So in Safari (never inside the installed app) this explains the two steps,
-   and, since Safari and the installed app keep separate storage, how to bring rounds across. */
-const INSTALL_KEY = 'dc.installDismissed';
-const isIOS = () => /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && navigator.maxTouchPoints > 1);
-const isStandalone = () => !!(navigator as { standalone?: boolean }).standalone || matchMedia('(display-mode: standalone)').matches;
-function wasDismissed() {
-  try {
-    return localStorage.getItem(INSTALL_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
+/** In Safari after rounds have been typed there: install steps, plus how to bring those rounds across (Safari and the
+    installed app keep separate storage). New visitors get the full-screen InstallLanding instead. */
 function InstallCard({ hasRounds }: { hasRounds: boolean }) {
-  const [hidden, setHidden] = useState(() => IN_FRAME || !isIOS() || isStandalone() || wasDismissed());
+  const [hidden, setHidden] = useState(() => !hasRounds || !shouldSuggestInstall());
   if (hidden) return null;
   const dismiss = () => {
-    try {
-      localStorage.setItem(INSTALL_KEY, '1');
-    } catch {
-      /* ignore */
-    }
+    dismissInstall();
     setHidden(true);
   };
   return (

@@ -1,6 +1,8 @@
 import { Activity, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { ActionsContext, type Actions, type Tab } from './components/common';
+import { InstallLanding } from './components/InstallLanding';
 import { KeySheet } from './components/KeySheet';
+import { dismissInstall, shouldSuggestInstall } from './lib/install';
 import { TabBar } from './components/TabBar';
 import { Toasts, UpdateBanner } from './components/Toasts';
 import { pastResult, Round, type RoundResult } from './lib/round';
@@ -33,6 +35,8 @@ export function App() {
   const [dir, setDir] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<Overlay>(overlayFromHash);
+  // a new visitor in iPhone Safari sees how to install first; "Continue in Safari" goes on to the start screen
+  const [landing, setLanding] = useState(() => !overlay && !realSessions().length && shouldSuggestInstall());
   useEffect(() => {
     const url = location.pathname + location.search;
     if (overlay?.kind === 'results') history.replaceState(null, '', `${url}#${overlay.past ? 'round' : 'results'}-${overlay.result.sess.id}`);
@@ -82,8 +86,9 @@ export function App() {
   const mode = (t: Tab) => (tab === t ? 'visible' : 'hidden');
   return (
     <ActionsContext.Provider value={actions}>
+      {landing && <InstallLanding onContinue={() => { dismissInstall(); setLanding(false); }} />}
       {/* while a round or its results are up, the tabs stay mounted but hidden, and their effects pause */}
-      <Activity mode={overlay ? 'hidden' : 'visible'}>
+      <Activity mode={overlay || landing ? 'hidden' : 'visible'}>
         <div className="app" style={{ '--dx': dir * 18 + 'px' } as React.CSSProperties}>
           <Activity mode={mode('home')}><Home /></Activity>
           <Activity mode={mode('map')}><MapScreen /></Activity>
