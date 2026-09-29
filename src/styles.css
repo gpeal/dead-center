@@ -46,7 +46,7 @@ p{margin:0}
 
 /* ---------- shell ---------- */
 /* the extra top padding keeps the header clear of iOS 26's blur under the status bar when scrolled to the top */
-.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:24px calc(var(--tab-h) + 24px)}
+.app{max-width:480px;margin:0 auto;padding-inline:16px;padding-block:24px calc(var(--tab-h) + 48px)}
 .screen{display:flex;flex-direction:column;gap:14px;animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
 /* --dx is set on .app from the direction of the last tab switch, so screens slide in from that side */
 @keyframes screenIn{from{opacity:.001;transform:translate(var(--dx,0px),6px)}to{opacity:1;transform:none}}
