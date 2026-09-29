@@ -1,7 +1,7 @@
 import { KEY, TRAINABLE } from './keys';
 import { PANGRAMS, SENTENCES, WORDS } from './text';
 import { statsFor } from './analysis';
-import { shuffle, dayDiff, today } from './util';
+import { shuffle } from './util';
 import { store, allTaps, type Session, type Mode } from './store';
 
 /* ================= practice text ================= */
@@ -67,8 +67,3 @@ export function linesFor(mode: Mode, focus: string[]) {
 
 export const modeName = (s: Pick<Session, 'mode' | 'focus'>) =>
   s.mode === 'baseline' ? 'Baseline' : s.mode === 'drill' ? `Drill · ${(s.focus || '').split('').map((c) => (c === '_' ? 'Space' : c === '^' ? 'Shift' : c.toUpperCase())).join(' ')}` : 'Round';
-export function streakNow() {
-  const S = store.S;
-  if (!S.streak.last) return 0;
-  return dayDiff(S.streak.last, today()) <= 1 ? S.streak.count : 0;
-}

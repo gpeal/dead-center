@@ -54,11 +54,6 @@ p{margin:0}
 .brand{display:flex;align-items:center;gap:9px}
 .brand svg{width:30px;height:30px;flex:none}
 .brand b{font:800 20px/1 var(--f-display);font-variation-settings:"wdth" 118;letter-spacing:-.01em}
-.chips{display:flex;gap:6px;align-items:center}
-.chip{display:inline-flex;align-items:center;gap:5px;height:30px;padding-inline:10px;border-radius:99px;background:var(--surface);box-shadow:var(--shadow);font:600 13px/1 var(--f-body);white-space:nowrap}
-.chip svg{width:15px;height:15px}
-.chip.gold{color:var(--gold-ink)}
-.chip.gold svg{color:var(--gold)}
 .iconbtn{width:36px;height:36px;border-radius:12px;display:grid;place-items:center;color:var(--ink-2)}
 .iconbtn svg{width:20px;height:20px}
 .iconbtn:active{background:var(--surface-2)}
@@ -296,11 +291,6 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .screen.res{gap:12px}
 .res-hero h1{font:900 36px/1 var(--f-display);font-variation-settings:"wdth" 132;letter-spacing:-.03em;animation:slam .6s cubic-bezier(.2,1.5,.4,1) both}
 @keyframes slam{from{opacity:0;transform:scale(1.6)}to{opacity:1;transform:none}}
-.stars{display:flex;gap:10px}
-.stars svg{width:24px;height:24px;animation:starIn .5s cubic-bezier(.3,1.6,.5,1) both}
-.stars svg:nth-child(2){animation-delay:.12s}
-.stars svg:nth-child(3){animation-delay:.24s}
-@keyframes starIn{from{opacity:0;transform:scale(0) rotate(-40deg)}to{opacity:1;transform:none}}
 .statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .statrow .tile{padding:10px;gap:6px;min-width:0}
 .statrow .tile .num{font-size:21px;line-height:1}
@@ -365,7 +355,6 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 @media (max-height:700px){
   .screen.res{gap:8px}
   .res-hero h1{font-size:28px}
-  .stars{display:none}
   .statrow .tile{padding:8px;gap:4px}
   .statrow .tile .num{font-size:18px}
   .tip{padding:9px 12px}

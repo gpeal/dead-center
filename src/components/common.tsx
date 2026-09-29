@@ -1,7 +1,6 @@
 import { createContext, useContext, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { lab } from '../lib/keys';
-import { streakNow } from '../lib/game';
 import type { Mode } from '../lib/store';
 import { clamp } from '../lib/util';
 
@@ -27,20 +26,11 @@ export function Kc({ k, size }: { k: string; size?: 'sm' | 'lg' }) {
 }
 
 export function Topbar() {
-  const st = streakNow();
   return (
     <header className="topbar">
       <div className="brand">
         <Icon name="logo" />
         <b>Dead Center</b>
-      </div>
-      <div className="chips">
-        {st > 0 && (
-          <span className="chip gold" title="Day streak">
-            <Icon name="flame" />
-            {st}
-          </span>
-        )}
       </div>
     </header>
   );

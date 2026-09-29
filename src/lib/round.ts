@@ -2,7 +2,6 @@ import { KEY, edist, quality, focusCode, type KeyDef } from './keys';
 import { buzz, sound } from './feedback';
 import { linesFor } from './game';
 import { allTaps, commitTaps, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
-import { dayDiff, today } from './util';
 import type { Point, ShiftState } from './keyboard';
 
 export type CharState = 'ok' | 'miss' | 'case' | 'fixed' | 'skip';
@@ -258,13 +257,6 @@ export class Round {
     const prevBest = S.bests.wpm, prevRounds = realSessions().length;
     commitTaps(this.taps);
     S.sessions.push(sess);
-    const d = today();
-    if (S.streak.last !== d) {
-      const diff = S.streak.last ? dayDiff(S.streak.last, d) : 99;
-      S.streak.count = diff === 1 ? S.streak.count + 1 : 1;
-      S.streak.last = d;
-      S.streak.best = Math.max(S.streak.best, S.streak.count);
-    }
     const pbW = prevRounds >= 2 && wpm > prevBest && acc >= 0.9;
     S.bests.wpm = Math.max(S.bests.wpm, wpm);
     S.bests.combo = Math.max(S.bests.combo, this.maxCombo);

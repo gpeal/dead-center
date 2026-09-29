@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon, Star } from '../components/Icon';
+import { Icon } from '../components/Icon';
 import type { Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
 import { MissMap } from '../components/MissMap';
@@ -39,7 +39,6 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
   const { sess: s, taps, pbW } = result;
   const acc = s.acc, prec = s.prec || 0;
   const grade = acc >= 0.99 && prec >= 0.6 ? 'Dead center.' : acc >= 0.96 ? 'Sharp.' : acc >= 0.9 ? 'Solid.' : acc >= 0.8 ? 'Getting there.' : 'Wobbly.';
-  const stars = +(acc >= 0.9) + +(acc >= 0.96) + +(acc >= 0.99 || (acc >= 0.975 && prec >= 0.6));
   const byKey: Record<string, Tap[]> = {};
   for (const t of taps) if (t.h !== t.k) (byKey[t.k] ||= []).push(t);
   const missKeys = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length).slice(0, 3);
@@ -77,7 +76,6 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
             <button className="iconbtn res-close" aria-label="Done" onClick={() => onClose(past ? 'progress' : 'home')}><Icon name="close" /></button>
             <span className="eyebrow">{past ? `${modeName(s)} · ${relDate(s.ts)}` : `${modeName(s)} complete`}</span>
             <h1>{grade}</h1>
-            <div className="stars" aria-label={`${stars} of 3`}>{[0, 1, 2].map((i) => <Star key={i} on={i < stars} />)}</div>
           </div>
           <div className="statrow">
             <div className="tile"><span className="eyebrow">Accuracy</span><CountUp to={acc * 100} suffix="%" /></div>
@@ -96,7 +94,7 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
             <section className="card mapcard">
               <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
               <div className="legend">
-                {slips ? <span>{slips}</span> : <><Star on size={14} /> <span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
+                {slips ? <span>{slips}</span> : <><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
               </div>
             </section>
           )}

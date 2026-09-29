@@ -21,7 +21,6 @@ const DEFS = {
   soundOff: line('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M16 9.5l5 5M21 9.5l-5 5"/>'),
   chev: line('<path d="M9 6l6 6-6 6"/>'),
   play: line('<path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/>'),
-  flame: line('<path d="M12 2.8c.8 3.3 5.5 5.2 5.5 10.4A5.5 5.5 0 0 1 6.5 13.2c0-2.3 1.2-3.9 2.3-4.9 0 2.2.9 3.3 2.1 3.4-.3-3 .1-5.9 1.1-8.9z" fill="currentColor" stroke="none"/>'),
   bolt: line('<path d="M13 2 4.5 13.5H11L10 22l8.5-11.5H12z" fill="currentColor" stroke="none"/>'),
   check: line('<path d="M5 12.5l4.5 4.5L19 7"/>'),
   ruler: line('<rect x="2.5" y="7.5" width="19" height="9" rx="2"/><path d="M7 7.5v3M11 7.5v4.5M15 7.5v3M19 7.5v4.5"/>'),
@@ -47,14 +46,6 @@ export function iconHtml(name: IconName) {
   const size = d.w ? ` width="${d.w}" height="${d.h}"` : '';
   const stroke = d.stroke ? ' fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"' : '';
   return `<svg viewBox="${d.vb}"${size}${stroke}>${d.inner}</svg>`;
-}
-
-export function Star({ on, size }: { on: boolean; size?: number }) {
-  return on ? (
-    <svg viewBox="0 0 40 40" width={size} height={size}><circle cx="20" cy="20" r="18.5" style={{ fill: 'var(--accent)' }} /><circle cx="20" cy="20" r="12.5" style={{ fill: 'var(--red)' }} /><circle cx="20" cy="20" r="6.5" style={{ fill: 'var(--gold)' }} /><circle cx="20" cy="20" r="18.5" fill="none" stroke="rgba(255,255,255,.35)" strokeWidth="1" /></svg>
-  ) : (
-    <svg viewBox="0 0 40 40" width={size} height={size}><circle cx="20" cy="20" r="18" fill="none" style={{ stroke: 'var(--line)' }} strokeWidth="2" /><circle cx="20" cy="20" r="12" fill="none" style={{ stroke: 'var(--line)' }} strokeWidth="2" /><circle cx="20" cy="20" r="6" fill="none" style={{ stroke: 'var(--line)' }} strokeWidth="2" /></svg>
-  );
 }
 
 export function Ring({ v, color, size = 40, sw = 4 }: { v: number; color: string; size?: number; sw?: number }) {
