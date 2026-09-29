@@ -1,6 +1,6 @@
 import { KEYS, KEY, KH, PITCH, TRAINABLE, hitTest } from './keys';
 import { ALL, recencyWeights, recentHalf, slowHalf, statsFor, type KeyStats } from './analysis';
-import { clamp, cssVar, fmt1, gauss, median, pct, reduceMotion, rng } from './util';
+import { clamp, cssVar, gauss, median, pct, reduceMotion, rng } from './util';
 import type { Kb } from './keyboard';
 import type { Tap } from './store';
 
@@ -356,7 +356,7 @@ export function heroAnim(cv: HTMLCanvasElement) {
   // most taps land clearly low and left of O (enough for the drift arrow to read at this size); every fourth misses,
   // alternately left onto I and down onto K
   const offset = (i: number): [number, number] =>
-    i % 8 === 3 ? [-25 + gauss(r) * 4, 1 + gauss(r) * 5] : i % 8 === 7 ? [-15 + gauss(r) * 4, 41 + gauss(r) * 3] : [-6 + gauss(r) * 2.6, 7 + gauss(r) * 2.2];
+    i % 8 === 3 ? [-25 + gauss(r) * 4, 1 + gauss(r) * 5] : i % 8 === 7 ? [-15 + gauss(r) * 4, 41 + gauss(r) * 3] : [-10 + gauss(r) * 2.2, 11 + gauss(r) * 2];
   function frame(t: number) {
     if (!cv.isConnected) return;
     const dpr = devicePixelRatio || 1, W = cv.clientWidth, H = cv.clientHeight;
@@ -429,7 +429,7 @@ export function heroAnim(cv: HTMLCanvasElement) {
       c.beginPath(); c.arc(ex, ey, 4.5, 0, 7); c.fill();
       if (p >= 1) {
         // the average drift, in the empty corner right of L so it never covers the taps
-        const lines = [`${fmt1(Math.abs(my))} pt low`, `${fmt1(Math.abs(mx))} pt left`];
+        const lines = [`${Math.round(Math.abs(my))} pt low`, `${Math.round(Math.abs(mx))} pt left`];
         c.font = `600 11px ${cssVar('--f-mono')}`;
         const tw = Math.max(...lines.map((l) => c.measureText(l).width)) + 26, th = 38, bx = W - tw - 5, by = H - th - 6;
         c.fillStyle = cssVar('--ink');
