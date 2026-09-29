@@ -287,7 +287,7 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 
 /* ---------- overlays ---------- */
 .overlay{position:relative;background:var(--bg)}
-.overlay .app{padding-block:calc(env(safe-area-inset-top,0px) + 8px) calc(env(safe-area-inset-bottom,0px) + 16px)}
+.overlay .app{padding-block:calc(env(safe-area-inset-top,0px) + 26px) calc(env(safe-area-inset-bottom,0px) + 16px)}
 .res-hero{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-block:4px 0}
 .res-close{position:absolute;left:-8px;top:-4px}
 .screen.res{gap:12px}
@@ -355,6 +355,7 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 
 /* short phones (iPhone SE and similar): tighten the results screen so it still fits without scrolling */
 @media (max-height:700px){
+  .overlay .app{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
   .screen.res{gap:8px}
   .res-hero h1{font-size:28px}
   .statrow .tile{padding:8px;gap:4px}
