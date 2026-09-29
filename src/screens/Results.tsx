@@ -4,7 +4,7 @@ import type { Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
 import { MissMap } from '../components/MissMap';
 import { UpdateBanner } from '../components/Toasts';
-import { troubleKeys } from '../lib/analysis';
+import { thumbTip, troubleKeys } from '../lib/analysis';
 import { drawDots } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
@@ -63,6 +63,7 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
     if (cv) drawDots(cv, kb, taps);
   }, [taps]);
 
+  const [tip] = useState(() => thumbTip(taps, result.caseSlips, prec));
   const slips = [
     result.caseSlips > 0 && `${result.caseSlips} wrong-case letter${result.caseSlips > 1 ? 's' : ''}`,
     result.realigns > 0 && `out of step ${result.realigns}× (not counted)`,
@@ -97,6 +98,10 @@ export function Results({ result, onStart, onClose }: { result: RoundResult; onS
               </div>
             </section>
           )}
+          <section className="card tip">
+            <span className="ic"><Icon name="target" /></span>
+            <div><span className="eyebrow">Try this next round</span><p>{tip}</p></div>
+          </section>
           <div className="btnstack">
             <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />Next round</button>
             <div className="btnrow">

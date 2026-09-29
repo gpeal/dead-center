@@ -152,3 +152,38 @@ export function patterns(taps: Tap[]): Pattern[] {
   }
   return out;
 }
+
+/**
+ * One thing to do differently with your thumb next round, based on this round's taps. Always returns a tip: it
+ * starts from the most-missed key's pattern, and falls back to centering or pace when there is nothing to fix.
+ */
+export function thumbTip(taps: Tap[], caseSlips: number, prec: number): string {
+  const byKey: Record<string, Tap[]> = {};
+  for (const t of taps) if (t.h !== t.k) (byKey[t.k] ||= []).push(t);
+  const top = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length)[0];
+  if (caseSlips >= 2 && (!top || top[1].length <= caseSlips)) return 'Tap Shift, then let the capitals appear before your thumb moves to the letter.';
+  if (top && top[1].length >= 2) {
+    const [k, misses] = top, L = lab(k), key = KEY[k];
+    const mx = misses.reduce((a, t) => a + t.dx, 0) / misses.length, my = misses.reduce((a, t) => a + t.dy, 0) / misses.length;
+    const hitDt = taps.filter((t) => t.h === t.k && t.dt > 0 && t.dt < 2500).map((t) => t.dt), missDt = misses.filter((t) => t.dt > 0 && t.dt < 2500).map((t) => t.dt);
+    const onto = Object.entries(misses.reduce<Record<string, number>>((a, t) => ((a[t.h] = (a[t.h] || 0) + 1), a), {})).sort((a, b) => b[1] - a[1])[0][0];
+    if (k === 'space') return my < 0 ? 'Tap space low, near its bottom edge, so your thumb stays clear of the letters above it.' : 'Finish each word, then give space a short, light tap instead of a reach.';
+    if (k === 'shift') return 'Reach all the way to Shift with a flatter thumb so the pad, not the tip, lands on it.';
+    if (missDt.length >= 2 && hitDt.length >= 10 && median(missDt) < 0.8 * median(hitDt)) return `Take a half beat before ${L}: let your thumb land fully, then move on.`;
+    const inward = (LEFT.has(k) && mx > 0) || (RIGHT.has(k) && mx < 0);
+    if (Math.abs(my) >= Math.abs(mx) * 0.8) {
+      if (my > 0) return `Aim your thumb at the top edge of ${L}: the pad of your thumb lands lower than the point you look at.`;
+      return `Let your thumb drop onto the lower half of ${L} instead of stretching up to it.`;
+    }
+    // sideways onto a key the other thumb owns: usually a thumb switch mid-word
+    if (HANDOFF.has(k) && ((LEFT.has(k) && RIGHT.has(onto)) || (RIGHT.has(k) && LEFT.has(onto)))) return `Type ${L} with your ${LEFT.has(k) ? 'left' : 'right'} thumb every time, even mid-word.`;
+    if (EDGE.has(k) && inward) return `Reach past ${L} and land on its outer edge: your thumb is stopping short.`;
+    if (inward) return `Aim ${L} a hair toward the outside of the keyboard, away from where your thumb comes from.`;
+    if (key) return `Bring your thumb onto ${L} from below, not from the side, so the tip lands where you aim.`;
+  }
+  const letters = taps.filter((t) => KEY[t.k]?.type === 'letter');
+  const dy = letters.length ? letters.reduce((a, t) => a + t.dy, 0) / letters.length : 0;
+  if (dy > 1.5) return 'Aim for the top third of every key: your thumb pad keeps landing below where you look.';
+  if (prec < 0.6) return 'Aim for the dead center of each letter, not just inside the key, even if it costs a little speed.';
+  return 'Speed up until you see a miss or two per line, then hold that pace with light, short taps.';
+}

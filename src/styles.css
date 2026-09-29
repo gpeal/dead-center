@@ -305,6 +305,10 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .missmap-over{position:absolute;left:0;top:0;pointer-events:none}
 .missmap-loupe{position:absolute;top:2px;border-radius:50%}
 .missmap-loupe:active{background:rgba(255,255,255,.08)}
+.tip{display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:center;padding:12px 14px}
+.tip .ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent)}
+.tip .ic svg{width:20px;height:20px}
+.tip p{font-size:14.5px;line-height:1.35;margin-top:4px;color:var(--ink)}
 .slips{font-size:12.5px;color:var(--muted);padding-block:4px 6px;border-top:1px solid var(--line)}
 .btnstack{display:flex;flex-direction:column;gap:10px}
 .btnrow{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px}
@@ -353,6 +357,18 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 .updbar.inline{position:static;transform:none;align-self:center;animation:fadeIn .3s}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 
+/* short phones (iPhone SE and similar): tighten the results screen so it still fits without scrolling */
+@media (max-height:700px){
+  .screen.res{gap:8px}
+  .res-hero h1{font-size:28px}
+  .stars{display:none}
+  .statrow .tile{padding:8px;gap:4px}
+  .statrow .tile .num{font-size:18px}
+  .tip{padding:9px 12px}
+  .tip p{font-size:13.5px;margin-top:2px}
+  #results .btn.primary{height:46px}
+  .btnrow .btn{height:42px}
+}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
