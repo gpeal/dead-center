@@ -378,8 +378,8 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 .install .x{width:30px;height:30px;margin-top:-4px;color:var(--muted)}
 .install .x svg{width:16px;height:16px}
 .landing{max-width:480px;margin:0 auto;min-height:100%;padding:28px 20px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:18px;animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
-.landing .brand svg{width:34px;height:34px}
-.landing h1{font:850 30px/1 var(--f-display);font-variation-settings:"wdth" 126;letter-spacing:-.02em;margin-top:6px}
+.landing .back{margin:-6px 0 0 -8px}
+.landing h1{font:850 30px/1 var(--f-display);font-variation-settings:"wdth" 126;letter-spacing:-.02em}
 .landing > p{color:var(--ink-2)}
 .install-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
 .install-steps li{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:center;padding:12px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-size:15px}

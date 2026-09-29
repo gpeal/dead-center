@@ -35,8 +35,9 @@ export function App() {
   const [dir, setDir] = useState(0);
   const [sheetKey, setSheetKey] = useState<string | null>(null);
   const [overlay, setOverlay] = useState<Overlay>(overlayFromHash);
-  // a new visitor in iPhone Safari sees how to install first; "Continue in Safari" goes on to the start screen
-  const [landing, setLanding] = useState(() => !overlay && !realSessions().length && shouldSuggestInstall());
+  // in iPhone Safari, the first round waits behind the Add to Home Screen page; "Continue in Safari" starts it
+  const [installFor, setInstallFor] = useState<{ mode: Mode; focus: string[] } | null>(null);
+  const landing = installFor !== null;
   useEffect(() => {
     const url = location.pathname + location.search;
     if (overlay?.kind === 'results') history.replaceState(null, '', `${url}#${overlay.past ? 'round' : 'results'}-${overlay.result.sess.id}`);
@@ -58,12 +59,19 @@ export function App() {
     if (!overlay) window.scrollTo(0, scrolls.current[tab] || 0);
   }, [tab, overlay]);
 
-  const start = useCallback((mode: Mode, focus: string[] = []) => {
+  const begin = useCallback((mode: Mode, focus: string[] = []) => {
     setSheetKey(null);
     if (!overlay) scrolls.current[tabRef.current] = window.scrollY;
     const round = new Round(mode, focus.filter(Boolean), (result) => setOverlay({ kind: 'results', result }));
     setOverlay({ kind: 'practice', round });
   }, [overlay]);
+  const start = useCallback((mode: Mode, focus: string[] = []) => {
+    if (!realSessions().length && shouldSuggestInstall()) {
+      setSheetKey(null);
+      return setInstallFor({ mode, focus });
+    }
+    begin(mode, focus);
+  }, [begin]);
   const openRound = useCallback((id: number) => {
     const sess = realSessions().find((s) => s.id === id);
     if (!sess) return;
@@ -86,7 +94,16 @@ export function App() {
   const mode = (t: Tab) => (tab === t ? 'visible' : 'hidden');
   return (
     <ActionsContext.Provider value={actions}>
-      {landing && <InstallLanding onContinue={() => { dismissInstall(); setLanding(false); }} />}
+      {installFor && (
+        <InstallLanding
+          onBack={() => setInstallFor(null)}
+          onContinue={() => {
+            dismissInstall();
+            setInstallFor(null);
+            begin(installFor.mode, installFor.focus);
+          }}
+        />
+      )}
       {/* while a round or its results are up, the tabs stay mounted but hidden, and their effects pause */}
       <Activity mode={overlay || landing ? 'hidden' : 'visible'}>
         <div className="app" style={{ '--dx': dir * 18 + 'px' } as React.CSSProperties}>
