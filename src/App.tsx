@@ -10,7 +10,6 @@ import { MapScreen } from './screens/MapScreen';
 import { Practice } from './screens/Practice';
 import { Progress } from './screens/Progress';
 import { Results } from './screens/Results';
-import { scroller } from './lib/util';
 
 const ORDER: Tab[] = ['home', 'map', 'progress'];
 type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult } | null;
@@ -29,19 +28,19 @@ export function App() {
   const tabRef = useRef(tab);
   const go = useCallback((t: Tab) => {
     setSheetKey(null);
-    if (t === tabRef.current) return scroller().scrollTo({ top: 0, behavior: 'smooth' });
-    scrolls.current[tabRef.current] = scroller().scrollTop;
+    if (t === tabRef.current) return window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrolls.current[tabRef.current] = window.scrollY;
     setDir(Math.sign(ORDER.indexOf(t) - ORDER.indexOf(tabRef.current)));
     tabRef.current = t;
     setTab(t);
   }, []);
   useLayoutEffect(() => {
-    if (!overlay) scroller().scrollTop = scrolls.current[tab] || 0;
+    if (!overlay) window.scrollTo(0, scrolls.current[tab] || 0);
   }, [tab, overlay]);
 
   const start = useCallback((mode: Mode, focus: string[] = []) => {
     setSheetKey(null);
-    if (!overlay) scrolls.current[tabRef.current] = scroller().scrollTop;
+    if (!overlay) scrolls.current[tabRef.current] = window.scrollY;
     const round = new Round(mode, focus.filter(Boolean), (result) => setOverlay({ kind: 'results', result }));
     setOverlay({ kind: 'practice', round });
   }, [overlay]);

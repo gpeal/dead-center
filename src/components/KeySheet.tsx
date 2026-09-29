@@ -5,7 +5,7 @@ import { diagnose, dirWords, drillImpact, masteryLabel, sessionSeries, statsFor 
 import { drawScatter } from '../lib/draw';
 import { lab } from '../lib/keys';
 import { dataset } from '../lib/store';
-import { fmt1, lockScroll, pct } from '../lib/util';
+import { fmt1, pct } from '../lib/util';
 
 /** A bottom sheet you can drag down (by the grabber, or by the content when it is scrolled to the top) to close. */
 export function Sheet({ onClose, children }: { onClose: () => void; children: ReactNode }) {
@@ -18,7 +18,10 @@ export function Sheet({ onClose, children }: { onClose: () => void; children: Re
     return () => clearTimeout(t);
   }, [closing, onClose]);
   useEffect(() => {
-    return lockScroll();
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.documentElement.style.overflow = '';
+    };
   }, []);
   useEffect(() => {
     const sh = sheet.current!, g = grab.current!, b = body.current!;
