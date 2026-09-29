@@ -1,6 +1,6 @@
 import { KEYS, KEY, KH, PITCH, TRAINABLE, hitTest } from './keys';
 import { ALL, recencyWeights, recentHalf, slowHalf, statsFor, type KeyStats } from './analysis';
-import { clamp, cssVar, fmt1, gauss, pct, reduceMotion, rng } from './util';
+import { clamp, cssVar, fmt1, gauss, median, pct, reduceMotion, rng } from './util';
 import type { Kb } from './keyboard';
 import type { Tap } from './store';
 
@@ -137,35 +137,15 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
     }
   }
 }
-export function drawDots(cv: HTMLCanvasElement, kb: Kb, taps: Tap[]) {
-  const { c } = sizeCanvas(cv, kb);
-  const g = cssVar('--green'), rd = cssVar('--red'), wh = cssVar('--kb-key');
-  const draw = (miss: boolean) => {
-    for (const t of taps) {
-      if ((t.h !== t.k) !== miss) continue;
-      const key = KEY[t.k], p = kb.toPx(key.cx + t.dx, key.cy + t.dy);
-      c.beginPath();
-      c.arc(p.x, p.y, miss ? 3.6 : 3, 0, 7);
-      c.fillStyle = miss ? rd : g;
-      c.globalAlpha = miss ? 0.95 : 0.7;
-      c.fill();
-      if (miss) {
-        c.globalAlpha = 1;
-        c.strokeStyle = wh;
-        c.lineWidth = 1;
-        c.stroke();
-      }
-    }
-  };
-  draw(false);
-  draw(true);
-  c.globalAlpha = 1;
-}
-/** Zoomed view of one key and its neighbors with each tap on it. `reach` is how many key widths to show on each side. */
-/** The round's most-missed keys, outlined on the full keyboard, with a dot where each of their misses landed. */
+export const ARROW_SCALE = 2;
+/**
+ * The round on the full keyboard: every key you typed gets one arrow from its center to your median tap (green,
+ * gold or red by distance; a dot when you were dead on). The worst keys (`keys`) are also outlined, with a red dot
+ * where each miss landed; their magnifiers carry the full detail.
+ */
 export function drawMissKeys(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], keys: string[]) {
   const { c } = sizeCanvas(cv, kb);
-  const red = cssVar('--red'), edge = cssVar('--kb-key');
+  const red = cssVar('--red'), green = cssVar('--green'), gold = cssVar('--gold'), edge = cssVar('--kb-key');
   for (const k of KEYS) {
     const e = kb.keyEls[k.id];
     e.style.background = '';
@@ -177,23 +157,42 @@ export function drawMissKeys(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], keys: s
     e.style.background = 'color-mix(in srgb, var(--red) 28%, var(--kb-key))';
     e.style.boxShadow = 'inset 0 0 0 2px var(--red)';
   }
-  const green = cssVar('--green');
-  for (const miss of [false, true])
-    for (const t of taps) {
-      if ((t.h !== t.k) !== miss || !keys.includes(t.k)) continue;
-      const key = KEY[t.k], p = kb.toPx(key.cx + t.dx, key.cy + t.dy);
+  const byKey: Record<string, Tap[]> = {};
+  for (const t of taps) if (KEY[t.k]) (byKey[t.k] ||= []).push(t);
+  for (const [k, arr] of Object.entries(byKey)) {
+    if (arr.length < 2) continue;
+    const key = KEY[k], mx = median(arr.map((t) => t.dx)), my = median(arr.map((t) => t.dy)), mag = Math.hypot(mx, my);
+    const col = mag < 1.6 ? green : mag < 3.4 ? gold : red;
+    const o = kb.toPx(key.cx, key.cy), e = kb.toPx(key.cx + mx * ARROW_SCALE, key.cy + my * ARROW_SCALE);
+    c.fillStyle = col;
+    c.strokeStyle = col;
+    if (mag < 0.8) {
       c.beginPath();
-      c.arc(p.x, p.y, miss ? 3.4 : 2.4, 0, 7);
-      c.globalAlpha = miss ? 1 : 0.6;
-      c.fillStyle = miss ? red : green;
+      c.arc(o.x, o.y, 2.6, 0, 7);
       c.fill();
-      if (miss) {
-        c.strokeStyle = edge;
-        c.lineWidth = 1;
-        c.stroke();
-      }
+      continue;
     }
-  c.globalAlpha = 1;
+    c.lineWidth = 2;
+    c.lineCap = 'round';
+    c.beginPath();
+    c.moveTo(o.x, o.y);
+    c.lineTo(e.x, e.y);
+    c.stroke();
+    c.beginPath();
+    c.arc(e.x, e.y, 2.8, 0, 7);
+    c.fill();
+  }
+  for (const t of taps) {
+    if (t.h === t.k || !keys.includes(t.k)) continue;
+    const key = KEY[t.k], p = kb.toPx(key.cx + t.dx, key.cy + t.dy);
+    c.beginPath();
+    c.arc(p.x, p.y, 3.4, 0, 7);
+    c.fillStyle = red;
+    c.fill();
+    c.strokeStyle = edge;
+    c.lineWidth = 1;
+    c.stroke();
+  }
 }
 
 export interface Loupe { k: string; x: number; label: string }

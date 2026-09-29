@@ -5,7 +5,7 @@ import { KeyboardView } from '../components/KeyboardView';
 import { MissMap } from '../components/MissMap';
 import { UpdateBanner } from '../components/Toasts';
 import { thumbTip, troubleKeys } from '../lib/analysis';
-import { drawDots } from '../lib/draw';
+import { ARROW_SCALE, drawMissKeys } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
 import { lab } from '../lib/keys';
@@ -59,7 +59,7 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
   }, [past, pbW, s]);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
-    if (cv) drawDots(cv, kb, taps);
+    if (cv) drawMissKeys(cv, kb, taps, []);
   }, [taps]);
 
   const [tip] = useState(() => thumbTip(taps, result.caseSlips, prec));
@@ -86,6 +86,7 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
           {missKeys.length ? (
             <section className="card misses">
               <MissMap keys={missKeys} taps={taps} />
+              <ArrowLegend misses />
               {slips && <p className="slips">{slips}</p>}
             </section>
           ) : !taps.length ? (
@@ -93,6 +94,7 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
           ) : (
             <section className="card mapcard">
               <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
+              <ArrowLegend />
               <div className="legend">
                 {slips ? <span>{slips}</span> : <><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
               </div>
@@ -114,6 +116,15 @@ export function Results({ result, past = false, onStart, onClose }: { result: Ro
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** Explains the median arrows on the round's keyboard. */
+function ArrowLegend({ misses = false }: { misses?: boolean }) {
+  return (
+    <div className="legend">
+      <span>arrow = median tap, {ARROW_SCALE}× long{misses ? ' · red dot = miss' : ''}</span>
     </div>
   );
 }

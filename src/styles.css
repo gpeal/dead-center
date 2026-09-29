@@ -314,7 +314,7 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .statrow .tile{padding:10px;gap:6px;min-width:0}
 .statrow .tile .num{font-size:21px;line-height:1}
 .statrow .tile.best .eyebrow{color:var(--green)}
-.misses{padding:12px 12px 6px}
+.misses{padding:12px 12px 10px}
 .missmap{position:relative}
 .missmap-over{position:absolute;left:0;top:0;pointer-events:none}
 .missmap-loupe{position:absolute;top:2px;border-radius:50%}
@@ -369,19 +369,6 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 body:has(.practice,#results) .updbar:not(.inline){display:none}
 .updbar.inline{position:static;transform:none;align-self:center;animation:fadeIn .3s}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
-
-/* short phones (iPhone SE and similar): tighten the results screen so it still fits without scrolling */
-@media (max-height:700px){
-  .overlay .app{padding-top:calc(env(safe-area-inset-top,0px) + 8px)}
-  .screen.res{gap:8px}
-  .res-hero h1{font-size:28px}
-  .statrow .tile{padding:8px;gap:4px}
-  .statrow .tile .num{font-size:18px}
-  .tip{padding:9px 12px}
-  .tip p{font-size:13.5px;margin-top:2px}
-  #results .btn.primary{height:46px}
-  .btnrow .btn{height:42px}
-}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
 }
