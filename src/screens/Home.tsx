@@ -7,7 +7,8 @@ import { allTaps, realSessions, storageOK, store, syncState, useStore } from '..
 import { pct } from '../lib/util';
 import { lab } from '../lib/keys';
 
-function Hero() {
+/** The first-run hook. In iPhone Safari (`onContinue`) its button leads to the Add to Home Screen page instead of a round. */
+export function Hero({ onContinue }: { onContinue?: () => void }) {
   const { start, go } = useActions();
   const cv = useRef<HTMLCanvasElement>(null);
   // the animation stops while the tab is hidden: Activity unmounts effects and remounts them on return
@@ -21,14 +22,20 @@ function Hero() {
         <div className="hero-stage">
           <canvas ref={cv} />
         </div>
-        <p>See where each tap lands on a true-size keyboard, then drill the keys you miss. The baseline takes about a minute.</p>
-        <button className="btn primary block" onClick={() => start('baseline')}>
-          <Icon name="play" />
-          Take the baseline
-        </button>
-        <button className="linkbtn small" style={{ alignSelf: 'center' }} onClick={() => go('map')}>
-          Preview with sample data
-        </button>
+        <p>See where each tap lands on a true-size keyboard, then drill the keys you miss.{onContinue ? '' : ' The baseline takes about a minute.'}</p>
+        {onContinue ? (
+          <button className="btn primary block" onClick={onContinue}>Continue</button>
+        ) : (
+          <>
+            <button className="btn primary block" onClick={() => start('baseline')}>
+              <Icon name="play" />
+              Take the baseline
+            </button>
+            <button className="linkbtn small" style={{ alignSelf: 'center' }} onClick={() => go('map')}>
+              Preview with sample data
+            </button>
+          </>
+        )}
       </section>
     </>
   );

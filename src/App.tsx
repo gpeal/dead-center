@@ -1,5 +1,5 @@
 import { Activity, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { ActionsContext, type Actions, type Tab } from './components/common';
+import { ActionsContext, Topbar, type Actions, type Tab } from './components/common';
 import { InstallLanding } from './components/InstallLanding';
 import { KeySheet } from './components/KeySheet';
 import { needsInstall } from './lib/install';
@@ -7,7 +7,7 @@ import { TabBar } from './components/TabBar';
 import { Toasts, UpdateBanner } from './components/Toasts';
 import { pastResult, Round, type RoundResult } from './lib/round';
 import { realSessions, type Mode } from './lib/store';
-import { Home } from './screens/Home';
+import { Hero, Home } from './screens/Home';
 import { MapScreen } from './screens/MapScreen';
 import { Practice } from './screens/Practice';
 import { Progress } from './screens/Progress';
@@ -37,6 +37,8 @@ export function App() {
   const [overlay, setOverlay] = useState<Overlay>(overlayFromHash);
   // in iPhone Safari the app is replaced by the Add to Home Screen page; it only runs from the Home Screen there
   const [gated] = useState(needsInstall);
+  // in Safari the hook shows first; its Continue button leads to the Add to Home Screen page
+  const [gateShown, setGateShown] = useState(false);
   useEffect(() => {
     const url = location.pathname + location.search;
     if (overlay?.kind === 'results') history.replaceState(null, '', `${url}#${overlay.past ? 'round' : 'results'}-${overlay.result.sess.id}`);
@@ -86,10 +88,19 @@ export function App() {
   const mode = (t: Tab) => (tab === t ? 'visible' : 'hidden');
   if (gated)
     return (
-      <>
-        <InstallLanding />
+      <ActionsContext.Provider value={actions}>
+        {gateShown ? (
+          <InstallLanding />
+        ) : (
+          <div className="app">
+            <main className="screen">
+              <Topbar />
+              <Hero onContinue={() => setGateShown(true)} />
+            </main>
+          </div>
+        )}
         <Toasts />
-      </>
+      </ActionsContext.Provider>
     );
   return (
     <ActionsContext.Provider value={actions}>
