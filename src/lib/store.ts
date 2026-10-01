@@ -99,7 +99,7 @@ export function save(full?: boolean) {
   if (!guest) cloudPush(!!full);
   emit();
 }
-/** Turns guest mode on (a fresh, separate profile) or off (back to your own; the guest's rounds are deleted). */
+/** Turns guest mode on (a fresh, separate profile with your settings) or off (back to your own; the guest's rounds are deleted). */
 export function setGuest(on: boolean) {
   if (on === guest) return;
   try {
@@ -111,8 +111,14 @@ export function setGuest(on: boolean) {
   } catch {
     /* ignore */
   }
+  // a guest starts with no rounds but the owner's settings; settings they change stay in the guest profile
+  const settings = store.S.settings;
   guest = on;
   store.S = load();
+  if (on) {
+    store.S.settings = { ...settings };
+    saveLocal();
+  }
   emit();
 }
 export function replaceState(next: State) {
