@@ -17,12 +17,12 @@ export function Hero({ onContinue }: { onContinue?: () => void }) {
     <>
       <section className="card hero">
         <h1>
-          Where does your thumb <em>really</em> land?
+          Improve your typing <em>accuracy</em> and speed
         </h1>
         <div className="hero-stage">
           <canvas ref={cv} />
         </div>
-        <p>See where each tap lands on a true-size keyboard, then drill the keys you miss.{onContinue ? '' : ' The baseline takes about a minute.'}</p>
+        <p>See exactly where your thumb lands on each key, then drill the ones you miss.{onContinue ? '' : ' The baseline takes about a minute.'}</p>
         {onContinue ? (
           <button className="btn primary block" onClick={onContinue}>Continue</button>
         ) : (
