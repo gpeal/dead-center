@@ -175,7 +175,7 @@ export function drawMissKeys(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], keys: s
   for (const t of taps) if (KEY[t.k]) (byKey[t.k] ||= []).push(t);
   for (const [k, arr] of Object.entries(byKey)) {
     if (arr.length < 2) continue;
-    const key = KEY[k], mx = median(arr.map((t) => t.dx)), my = median(arr.map((t) => t.dy)), mag = Math.hypot(mx, my);
+    const key = KEY[k], mx = k === 'space' ? 0 : median(arr.map((t) => t.dx)), my = median(arr.map((t) => t.dy)), mag = Math.hypot(mx, my);
     const col = mag < 1.6 ? green : mag < 3.4 ? gold : red;
     const o = kb.toPx(key.cx, key.cy), e = kb.toPx(key.cx + mx * ARROW_SCALE, key.cy + my * ARROW_SCALE);
     c.fillStyle = col;

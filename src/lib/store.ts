@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react';
 import { IN_FRAME } from './util';
 import { makeSample } from './sample';
+import { isOutlier } from './keys';
 
 /* ================= types ================= */
 // a tap as stored: [session id, target key, key hit, dx*10, dy*10, previous char, ms since previous tap]
@@ -36,7 +37,8 @@ export function hydrate(raw: any): State {
   delete o.xp;
   if (Array.isArray(o.sessions)) for (const s of o.sessions) delete s.score;
   return Object.assign(f, o, {
-    taps: Array.isArray(o.taps) ? o.taps : [], sessions: Array.isArray(o.sessions) ? o.sessions : [],
+    // drop outliers saved before they were filtered out (see isOutlier)
+    taps: Array.isArray(o.taps) ? o.taps.filter((t: TapRow) => !isOutlier(t[1], t[3] / 10, t[4] / 10)) : [], sessions: Array.isArray(o.sessions) ? o.sessions : [],
     tapBase: o.tapBase || 0, rev: o.rev || 0,
     settings: Object.assign(f.settings, o.settings || {}),
     bests: Object.assign(f.bests, o.bests || {}),

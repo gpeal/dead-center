@@ -1,4 +1,4 @@
-import { KEY, edist, quality, focusCode, type KeyDef } from './keys';
+import { KEY, edist, quality, focusCode, isOutlier, type KeyDef } from './keys';
 import { buzz, sound } from './feedback';
 import { linesFor } from './game';
 import { allTaps, commitTaps, realSessions, save, store, toObj, type Mode, type Session, type Tap, type TapRow } from './store';
@@ -47,7 +47,8 @@ export class Round {
   }
   private record(tk: string, hit: string, down: Point, dt: number, prev: string) {
     const key = KEY[tk], dx = down.x - key.cx, dy = down.y - key.cy;
-    this.taps.push([this.sid, tk, hit, Math.round(dx * 10), Math.round(dy * 10), prev, Math.min(dt, 9999)]);
+    // outliers still count as misses in the round, but aren't kept as aim data (see isOutlier)
+    if (!isOutlier(tk, dx, dy)) this.taps.push([this.sid, tk, hit, Math.round(dx * 10), Math.round(dy * 10), prev, Math.min(dt, 9999)]);
     return { dx, dy, key };
   }
   // counts a tap toward accuracy, centering, combo and bullseye runs

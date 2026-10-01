@@ -39,7 +39,9 @@ export function statsFor(taps: Tap[], k: string, half = recentHalf()): KeyStats 
       if (t.dt > 0 && t.dt < 2500) dtM.push(t.dt);
     }
   });
-  const mx = sx / W, my = sy / W, sdx = Math.sqrt(Math.max(0, sxx / W - mx * mx)), sdy = Math.sqrt(Math.max(0, syy / W - my * my));
+  const my = sy / W, sdy = Math.sqrt(Math.max(0, syy / W - my * my));
+  // space has no sideways drift or spread to fix (see edist), so only its vertical aim counts
+  const flat = k === 'space', mx = flat ? 0 : sx / W, sdx = flat ? 0 : Math.sqrt(Math.max(0, sxx / W - mx * mx));
   const acc = wHit / W, prec = wHit ? ps / wHit : 0;
   // effective sample size: how many equally weighted taps the weighted ones are worth
   const neff = (W * W) / W2;

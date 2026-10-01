@@ -50,12 +50,26 @@ const NAMES: Record<string, string> = { space: 'Space', shift: 'Shift', del: 'De
 export const lab = (k: string) => NAMES[k] || (k || '').toUpperCase();
 // B goes to the left thumb, matching the usual split (T, G, V, B left; Y, H, N right)
 export const LEFT = new Set([...'qwertasdfgzxcvb', 'shift']), RIGHT = new Set('yuiophjklnm'), HANDOFF = new Set('tygbhvn'), EDGE = new Set([...'qazpl', 'shift']);
+/** How far off-center a tap is, as a share of the key's half size. Space only counts up and down: you tap it anywhere
+    along its length, depending on which thumb is free, so sideways position on the bar isn't an aim error. */
 export function edist(dx: number, dy: number, key: KeyDef) {
+  if (key.id === 'space') return Math.abs(dy) / (key.h / 2);
   return Math.hypot(dx / (key.w / 2), dy / (key.h / 2));
 }
 export type Quality = 'bull' | 'good' | 'edge';
 export function quality(dx: number, dy: number, key: KeyDef): Quality {
   const d = edist(dx, dy, key);
   return d < 0.4 ? 'bull' : d < 0.75 ? 'good' : 'edge';
+}
+/**
+ * A tap that says nothing about aim: it landed more than a whole key beyond the target key's edge (past the
+ * neighboring key sideways, or past the next row up or down). Those are wrong-letter slips, stray touches, taps on
+ * the Siri bar or emoji area, or deliberate presses like Delete, measured against the letter that was due. Near
+ * misses onto a neighbor, however far off-center, are aim errors and are kept.
+ */
+export function isOutlier(k: string, dx: number, dy: number) {
+  const key = KEY[k];
+  if (!key) return true;
+  return Math.abs(dx) - key.w / 2 > PITCH || Math.abs(dy) - key.h / 2 > ROWY[1] - ROWY[0];
 }
 export const focusCode = (k: string) => (k === 'space' ? '_' : k === 'shift' ? '^' : k);
