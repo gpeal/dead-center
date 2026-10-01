@@ -38,7 +38,7 @@ export function createKeyboard(host: HTMLElement, { live = false } = {}): Kb {
     W = el.clientWidth || host.clientWidth || KBW;
     sx = W / KBW;
     sy = live ? 1 : sx;
-    el.style.height = live ? 'max(327px, calc(293px + env(safe-area-inset-bottom, 0px)))' : (Y1 - Y0) * sy + 'px';
+    el.style.height = live ? 'calc(293px + max(7px, env(safe-area-inset-bottom, 0px)))' : (Y1 - Y0) * sy + 'px';
     for (const k of KEYS) {
       const e = keyEls[k.id], s = e.style;
       s.left = k.x * sx + 'px';
