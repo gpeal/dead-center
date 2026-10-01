@@ -32,7 +32,9 @@ function sizeCanvas(cv: HTMLCanvasElement, kb: Kb) {
   return { c, W, H, dpr };
 }
 /** The all-taps map. `half` is the recency half-life (recentHalf() fades older taps; ALL treats every tap the same). */
-/** Share of the spread ring's area (centered on the average tap, radii = spread) that lies on the key itself. */
+/** Spread rings are two standard deviations across each axis, so about 86% of taps (1 - e^-2) land inside. */
+export const RING_SD = 2;
+/** Share of the spread ring's area (centered on the average tap, radii = RING_SD × spread) that lies on the key. */
 export function ringOnKey(key: { w: number; h: number }, mx: number, my: number, rx: number, ry: number) {
   const N = 24, hw = key.w / 2, hh = key.h / 2;
   let inside = 0, total = 0;
@@ -112,7 +114,7 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
           c.globalAlpha = 1;
         }
       }
-      const on = ringOnKey(key, s.mx, s.my, Math.max(2 / kb.sx, s.sdx), Math.max(2 / kb.sy, s.sdy));
+      const on = ringOnKey(key, s.mx, s.my, Math.max(2 / kb.sx, RING_SD * s.sdx), Math.max(2 / kb.sy, RING_SD * s.sdy));
       const col = on >= 0.95 ? green : on >= 0.8 ? gold : red;
       c.globalAlpha = 0.9;
       c.strokeStyle = col;
@@ -120,7 +122,7 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
       c.setLineDash([2, 2.5]);
       c.lineWidth = 1.2;
       c.beginPath();
-      c.ellipse(mp.x, mp.y, Math.max(2, s.sdx * kb.sx), Math.max(2, s.sdy * kb.sy), 0, 0, 7);
+      c.ellipse(mp.x, mp.y, Math.max(2, RING_SD * s.sdx * kb.sx), Math.max(2, RING_SD * s.sdy * kb.sy), 0, 0, 7);
       c.stroke();
       c.setLineDash([]);
       c.lineWidth = 2;
@@ -341,7 +343,7 @@ export function drawScatter(cv: HTMLCanvasElement, k: string, s: KeyStats, { rea
     c.lineWidth = 2;
     c.setLineDash([4, 3]);
     c.beginPath();
-    c.ellipse(mx, my, Math.max(3, s.sdx * sc), Math.max(3, s.sdy * sc), 0, 0, 7);
+    c.ellipse(mx, my, Math.max(3, RING_SD * s.sdx * sc), Math.max(3, RING_SD * s.sdy * sc), 0, 0, 7);
     c.stroke();
     c.setLineDash([]);
     c.lineWidth = 2.4;

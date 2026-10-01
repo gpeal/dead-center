@@ -23,7 +23,7 @@ function Legend({ mode, recent, taps }: { mode: MapMode; recent: boolean; taps: 
   if (mode === 'aim')
     return (
       <div className="legend">
-        <span>ring on the key:</span> <span className="dot" style={{ background: 'var(--green)' }} />95%+ <span className="dot" style={{ background: 'var(--gold)' }} />80–95% <span className="dot" style={{ background: 'var(--red)' }} />less <span>· line = drift{recent ? ', faint = earlier' : ''}</span>
+        <span>ring holds 86% of taps; on the key:</span> <span className="dot" style={{ background: 'var(--green)' }} />95%+ <span className="dot" style={{ background: 'var(--gold)' }} />80–95% <span className="dot" style={{ background: 'var(--red)' }} />less <span>· line = drift{recent ? ', faint = earlier' : ''}</span>
       </div>
     );
   return (

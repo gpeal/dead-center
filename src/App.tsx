@@ -18,8 +18,8 @@ const ORDER: Tab[] = ['home', 'map', 'progress', 'profile'];
 // past: a saved round reopened from Progress, which returns there when closed; quiet: reopened by a reload, so no confetti
 type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean } | null;
 
-// The results screen is kept in the URL (#results-<id>, or #round-<id> for one reopened from Progress), so a reload,
-// including the update banner's Reload button, lands back on it instead of on Today.
+// The current tab (#map, #progress, #profile) and the results screen (#results-<id>, or #round-<id> for one reopened
+// from Progress) are kept in the URL, so a reload, including the update banner's Reload button, lands back there.
 const RESULTS_HASH = /^#(results|round)-(\d+)$/;
 function overlayFromHash(): Overlay {
   const m = RESULTS_HASH.exec(location.hash);
@@ -43,8 +43,8 @@ export function App() {
   useEffect(() => {
     const url = location.pathname + location.search;
     if (overlay?.kind === 'results') history.replaceState(null, '', `${url}#${overlay.past ? 'round' : 'results'}-${overlay.result.sess.id}`);
-    else if (RESULTS_HASH.test(location.hash)) history.replaceState(null, '', url);
-  }, [overlay]);
+    else history.replaceState(null, '', tab === 'home' ? url : `${url}#${tab}`);
+  }, [overlay, tab]);
 
   // each tab keeps its own scroll position, since all three stay mounted
   const scrolls = useRef<Record<string, number>>({});
