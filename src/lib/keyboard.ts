@@ -1,4 +1,4 @@
-import { KEYS, KEY, KBW, LETTERS, EMOJI_C, MIC_C, hitTest, type KeyDef } from './keys';
+import { KEYS, KEY, KBW, KH, ROWY, LETTERS, EMOJI_C, MIC_C, hitTest, type KeyDef } from './keys';
 import { clamp } from './util';
 import { iconHtml } from '../components/Icon';
 
@@ -12,6 +12,35 @@ export interface Kb {
   readonly sx: number; readonly sy: number;
 }
 export interface Point { x: number; y: number }
+
+/* The live keyboard has to sit exactly where the real one does, and iOS draws it differently on the big phones. Taps
+   are always stored in the 402pt layout from keys.ts, so stats compare across phones; the live keyboard maps between
+   that layout and the screen. Measured from the iOS 27 keyboard on an iPhone 18 Pro (402pt) and Pro Max (440pt). */
+interface Metrics { h: number; rows: number[]; kh: number; emojiY: number; micY: number }
+const KB_H = 293, MARGIN = 6.67;
+const PRO: Metrics = { h: KB_H, rows: ROWY, kh: KH, emojiY: EMOJI_C.y, micY: MIC_C.y };
+const MAX: Metrics = { h: 312, rows: [51, 107, 163, 219], kh: 45.33, emojiY: 306, micY: 305 };
+const metrics = (w: number) => (w >= 428 ? MAX : PRO);
+
+/** Piecewise-linear map through matching points; each key and each gap between rows stretches on its own. */
+function piecewise(a: number[], b: number[]) {
+  const at = (v: number, from: number[], to: number[]) => {
+    let i = 1;
+    while (i < from.length - 1 && v > from[i]) i++;
+    return to[i - 1] + ((v - from[i - 1]) * (to[i] - to[i - 1])) / (from[i] - from[i - 1]);
+  };
+  return { fwd: (v: number) => at(v, a, b), inv: (v: number) => at(v, b, a) };
+}
+function rowMap(m: Metrics) {
+  const a = [0], b = [0];
+  ROWY.forEach((y, r) => {
+    a.push(y, y + KH);
+    b.push(m.rows[r], m.rows[r] + m.kh);
+  });
+  a.push(KB_H);
+  b.push(m.h);
+  return piecewise(a, b);
+}
 
 function keyInner(k: KeyDef, up: boolean) {
   if (k.type === 'letter') return `<span>${up ? k.id.toUpperCase() : k.id}</span>`;
@@ -33,18 +62,25 @@ export function createKeyboard(host: HTMLElement, { live = false } = {}): Kb {
   el.querySelectorAll<HTMLDivElement>('.key').forEach((e) => (keyEls[e.dataset.k!] = e));
   const fx = el.querySelector<HTMLDivElement>('.fx')!;
   const Y0 = live ? 0 : 44, Y1 = live ? 300 : 262;
-  let sx = 1, sy = 1, W = KBW;
+  // static maps scale uniformly; the live keyboard keeps iOS's fixed side margins and its rows follow `metrics`
+  let sx = 1, sy = 1, W = KBW, m = PRO, M = 0, ys = rowMap(PRO);
+  const mapX = (x: number) => M + (x - M) * sx, mapY = (y: number) => (live ? ys.fwd(y) : (y - Y0) * sy);
   function layout() {
     W = el.clientWidth || host.clientWidth || KBW;
-    sx = W / KBW;
-    sy = live ? 1 : sx;
-    el.style.height = live ? 'calc(293px + max(7px, env(safe-area-inset-bottom, 0px)))' : (Y1 - Y0) * sy + 'px';
+    if (live) {
+      m = metrics(W);
+      ys = rowMap(m);
+      M = MARGIN;
+      sx = (W - 2 * M) / (KBW - 2 * M);
+      sy = m.kh / KH;
+    } else sx = sy = W / KBW;
+    el.style.height = live ? `calc(${m.h}px + max(7px, env(safe-area-inset-bottom, 0px)))` : (Y1 - Y0) * sy + 'px';
     for (const k of KEYS) {
       const e = keyEls[k.id], s = e.style;
-      s.left = k.x * sx + 'px';
-      s.top = (k.y - Y0) * sy + 'px';
+      s.left = mapX(k.x) + 'px';
+      s.top = mapY(k.y) + 'px';
       s.width = k.w * sx + 'px';
-      s.height = k.h * sy + 'px';
+      s.height = mapY(k.y + k.h) - mapY(k.y) + 'px';
       if (!live) {
         s.borderRadius = 8.5 * sy + 'px';
         const sp = e.querySelector('span');
@@ -58,18 +94,18 @@ export function createKeyboard(host: HTMLElement, { live = false } = {}): Kb {
       si.style.top = '13.7px';
       si.style.height = '20px';
       const em = el.querySelector<HTMLElement>('.emoji')!;
-      em.style.left = EMOJI_C.x * sx - 13.5 + 'px';
-      em.style.top = EMOJI_C.y - 13.5 + 'px';
+      em.style.left = EMOJI_C.x - 13.5 + 'px';
+      em.style.top = m.emojiY - 13.5 + 'px';
       const mi = el.querySelector<HTMLElement>('.mic')!;
-      mi.style.left = MIC_C.x * sx - 9.15 + 'px';
-      mi.style.top = MIC_C.y - 10.35 + 'px';
+      mi.style.left = W - (KBW - MIC_C.x) - 9.15 + 'px';
+      mi.style.top = m.micY - 10.35 + 'px';
     }
   }
   function toKb(cx: number, cy: number) {
-    const r = el.getBoundingClientRect();
-    return { x: (cx - r.left) / sx, y: (cy - r.top) / sy + Y0 };
+    const r = el.getBoundingClientRect(), x = cx - r.left, y = cy - r.top;
+    return { x: (x - M) / sx + M, y: live ? ys.inv(y) : y / sy + Y0 };
   }
-  const toPx = (x: number, y: number) => ({ x: x * sx, y: (y - Y0) * sy });
+  const toPx = (x: number, y: number) => ({ x: mapX(x), y: mapY(y) });
   let shiftSt: ShiftState | null = null;
   function setShift(st: ShiftState) {
     if (st === shiftSt) return;
@@ -82,14 +118,14 @@ export function createKeyboard(host: HTMLElement, { live = false } = {}): Kb {
   function popup(k: string) {
     const key = KEY[k];
     if (!key || key.type !== 'letter') return null;
-    const kx = key.x * sx, ky = (key.y - Y0) * sy, kw = key.w * sx, kh = key.h * sy;
+    const kx = mapX(key.x), ky = mapY(key.y), kw = key.w * sx, kh = mapY(key.y + key.h) - ky;
     const ex = 11 * Math.min(1, sx), bw = kw + 2 * ex, bh = 52;
     const bx = clamp(kx - ex, 1, W - 1 - bw);
     const by = ky - 60, nt = by + bh, r = 10, rk = 8.5;
     const d = `M${bx + r},${by}H${bx + bw - r}Q${bx + bw},${by} ${bx + bw},${by + r}V${nt - 6}C${bx + bw},${nt + 8} ${kx + kw},${ky + 2} ${kx + kw},${ky + 12}V${ky + kh - rk}Q${kx + kw},${ky + kh} ${kx + kw - rk},${ky + kh}H${kx + rk}Q${kx},${ky + kh} ${kx},${ky + kh - rk}V${ky + 12}C${kx},${ky + 2} ${bx},${nt + 8} ${bx},${nt - 6}V${by + r}Q${bx},${by} ${bx + r},${by}Z`;
     const p = document.createElement('div');
     p.className = 'popup';
-    p.style.cssText = `left:0;top:0;width:${W}px;height:${Y1 * sy}px`;
+    p.style.cssText = `left:0;top:0;width:${W}px;height:${el.clientHeight}px`;
     p.innerHTML = `<svg width="${W}" height="${Y1}" style="position:absolute;left:0;top:0;overflow:visible"><path d="${d}"/></svg><b style="top:${by + bh / 2 - 17}px;left:${bx}px;width:${bw}px;right:auto">${shiftSt !== 'off' ? k.toUpperCase() : k}</b>`;
     fx.appendChild(p);
     return p;
