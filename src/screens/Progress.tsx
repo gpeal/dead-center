@@ -57,7 +57,7 @@ export function Progress() {
         <div className="tile"><span className="eyebrow">Accuracy</span><span className="num">{t.length ? pct(hits / t.length) : 0}<small>%</small></span></div>
         <div className="tile"><span className="eyebrow">Best speed</span><span className="num">{Math.round(bestW)}<small>wpm</small></span></div>
       </div>
-      <Charts sessions={rs} />
+      {rs.length ? <Charts sessions={rs} /> : <div className="card small muted">No rounds yet. Accuracy and speed show up here after your first one.</div>}
       {!ds.sample && (
         <>
           <SectionH title="Recent rounds"><span className="eyebrow">{rs.length} total</span></SectionH>

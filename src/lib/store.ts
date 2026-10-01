@@ -133,7 +133,8 @@ export function allTaps() {
 }
 export const realSessions = () => store.S.sessions.filter((s) => !s.partial);
 export function dataset(): Dataset {
-  if (store.S.taps.length >= 40) return { taps: allTaps(), sessions: realSessions(), sample: false };
+  // guests start blank: example data is only for a new owner before their first rounds
+  if (store.S.taps.length >= 40 || guest) return { taps: allTaps(), sessions: realSessions(), sample: false };
   return SAMPLE || (SAMPLE = makeSample());
 }
 export function commitTaps(taps: TapRow[]) {

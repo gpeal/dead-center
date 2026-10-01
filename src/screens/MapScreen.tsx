@@ -79,8 +79,9 @@ export function MapScreen() {
         </KeyboardView>
         <Legend mode={mode} recent={range === 'recent'} taps={ds.taps.length} />
       </section>
-      <SectionH title="Lowest accuracy"><span className="eyebrow">Tap a key</span></SectionH>
-      <section className="card" style={{ padding: '14px 16px' }}>
+      {!low.length && <div className="card small muted">No taps yet. Finish a round and your map fills in.</div>}
+      {low.length > 0 && <SectionH title="Lowest accuracy"><span className="eyebrow">Tap a key</span></SectionH>}
+      {low.length > 0 && <section className="card" style={{ padding: '14px 16px' }}>
         <div className={'rowbars' + (range === 'recent' ? ' trends' : '')}>
           {low.map((s) => (
             <button key={s.k} className="krowbar" aria-label={`${lab(s.k)}: ${pct(s.acc)}% accurate. Open tap map`} onClick={() => openKey(s.k)}>
@@ -91,7 +92,7 @@ export function MapScreen() {
             </button>
           ))}
         </div>
-      </section>
+      </section>}
       {pats.length > 0 && (
         <>
           <SectionH title="Patterns"><span className="eyebrow">Last {Math.min(ds.taps.length, 3000).toLocaleString()} taps</span></SectionH>

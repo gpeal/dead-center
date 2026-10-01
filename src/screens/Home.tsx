@@ -3,7 +3,7 @@ import { Icon } from '../components/Icon';
 import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/common';
 import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
 import { heroAnim } from '../lib/draw';
-import { allTaps, realSessions, storageOK, store, syncState, useStore } from '../lib/store';
+import { allTaps, realSessions, storageOK, store, syncState, useStore, isGuest } from '../lib/store';
 import { pct } from '../lib/util';
 import { lab } from '../lib/keys';
 
@@ -31,9 +31,11 @@ export function Hero({ onContinue }: { onContinue?: () => void }) {
               <Icon name="play" />
               Take the baseline
             </button>
-            <button className="linkbtn small" style={{ alignSelf: 'center' }} onClick={() => go('map')}>
-              Preview with sample data
-            </button>
+            {!isGuest() && (
+              <button className="linkbtn small" style={{ alignSelf: 'center' }} onClick={() => go('map')}>
+                Preview with sample data
+              </button>
+            )}
           </>
         )}
       </section>

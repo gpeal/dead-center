@@ -111,7 +111,6 @@ function GuestCard() {
     if (on && realSessions().length && !armed) return setArmed(true); // confirm before deleting the guest's rounds
     setArmed(false);
     setGuest(!on);
-    toast(on ? 'check' : 'target', on ? 'Back to your profile' : 'Guest mode on', on ? "The guest's rounds were deleted" : 'Rounds now go to a temporary guest profile');
   };
   return (
     <section className="card settings">

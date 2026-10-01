@@ -31,6 +31,7 @@ const DEFS = {
   down: { vb: '0 0 10 10', w: 9, h: 9, inner: '<path d="M5 8.5 1.5 4h7z" fill="currentColor"/>' },
   share: line('<path d="M12 3.5v11"/><path d="M8 7.5l4-4 4 4"/><path d="M8 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7a1.5 1.5 0 0 0 1.5 1.5h11a1.5 1.5 0 0 0 1.5-1.5v-7a1.5 1.5 0 0 0-1.5-1.5H16"/>'),
   addbox: line('<rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/>'),
+  guest: line('<circle cx="12" cy="12" r="9.5" stroke-dasharray="2.6 2.4"/><circle cx="12" cy="10" r="2.7"/><path d="M7.4 17.4c1-2.2 2.7-3.3 4.6-3.3s3.6 1.1 4.6 3.3"/>'),
   person: line('<circle cx="12" cy="8.5" r="3.8"/><path d="M4.8 20c1.2-3.6 3.9-5.4 7.2-5.4s6 1.8 7.2 5.4"/>'),
   copy: line('<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>'),
 } satisfies Record<string, Def>;

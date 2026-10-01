@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { Icon, type IconName } from './Icon';
 import type { Tab } from './common';
+import { isGuest, useStore } from '../lib/store';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'home', label: 'Today', icon: 'target' },
@@ -17,6 +18,7 @@ const PAD = 14, ICON = 20, GAP = 7, SEP = 4;
  * tabs exactly while the old label folds away and the new one opens.
  */
 export function TabBar({ tab, onGo }: { tab: Tab; onGo: (t: Tab) => void }) {
+  useStore(); // the Profile icon changes in guest mode
   const labels = useRef<(HTMLSpanElement | null)[]>([]);
   const [lw, setLw] = useState<number[] | null>(null);
   useLayoutEffect(() => {
@@ -40,7 +42,7 @@ export function TabBar({ tab, onGo }: { tab: Tab; onGo: (t: Tab) => void }) {
         {lw && <span className="tab-ind" aria-hidden="true" data-flip={switches < 0 ? undefined : switches % 2} style={{ width: widths[ai], transform: `translateX(${x}px)` }} />}
         {TABS.map((t, i) => (
           <button key={t.id} className="tab" aria-label={t.label} aria-current={t.id === tab ? 'page' : 'false'} style={lw ? { width: widths[i] } : undefined} onClick={() => onGo(t.id)}>
-            <Icon name={t.icon} />
+            <Icon name={t.id === 'profile' && isGuest() ? 'guest' : t.icon} />
             <span className="l">{t.label}</span>
           </button>
         ))}
