@@ -381,6 +381,7 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 .install-steps small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
 .landing-move{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-size:13.5px;color:var(--ink-2)}
 .landing-move .btn{height:42px;font-size:14px}
+.guest-chip{display:inline-flex;align-items:center;height:28px;padding-inline:11px;border-radius:99px;background:var(--gold-soft);color:var(--gold-ink);font:600 12.5px/1 var(--f-body)}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}

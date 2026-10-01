@@ -32,6 +32,19 @@ function sizeCanvas(cv: HTMLCanvasElement, kb: Kb) {
   return { c, W, H, dpr };
 }
 /** The all-taps map. `half` is the recency half-life (recentHalf() fades older taps; ALL treats every tap the same). */
+/** Share of the spread ring's area (centered on the average tap, radii = spread) that lies on the key itself. */
+export function ringOnKey(key: { w: number; h: number }, mx: number, my: number, rx: number, ry: number) {
+  const N = 24, hw = key.w / 2, hh = key.h / 2;
+  let inside = 0, total = 0;
+  for (let i = 0; i < N; i++)
+    for (let j = 0; j < N; j++) {
+      const u = ((i + 0.5) / N) * 2 - 1, v = ((j + 0.5) / N) * 2 - 1;
+      if (u * u + v * v > 1) continue;
+      total++;
+      if (Math.abs(mx + u * rx) <= hw && Math.abs(my + v * ry) <= hh) inside++;
+    }
+  return total ? inside / total : 1;
+}
 export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMode, half = recentHalf()) {
   const { c, W, H, dpr } = sizeCanvas(cv, kb);
   c.clearRect(0, 0, W, H);
@@ -99,7 +112,8 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
           c.globalAlpha = 1;
         }
       }
-      const mag = Math.hypot(s.mx, s.my), col = mag < 1.6 ? green : mag < 3.4 ? gold : red;
+      const on = ringOnKey(key, s.mx, s.my, Math.max(2 / kb.sx, s.sdx), Math.max(2 / kb.sy, s.sdy));
+      const col = on >= 0.95 ? green : on >= 0.8 ? gold : red;
       c.globalAlpha = 0.9;
       c.strokeStyle = col;
       c.fillStyle = col;

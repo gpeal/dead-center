@@ -6,6 +6,7 @@ const TABS: { id: Tab; label: string; icon: IconName }[] = [
   { id: 'home', label: 'Today', icon: 'target' },
   { id: 'map', label: 'Map', icon: 'kbd' },
   { id: 'progress', label: 'Progress', icon: 'chart' },
+  { id: 'profile', label: 'Profile', icon: 'person' },
 ];
 // must match .tab padding, icon size and gap, and .tabbar .in gap in styles.css
 const PAD = 14, ICON = 20, GAP = 7, SEP = 4;

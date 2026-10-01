@@ -10,10 +10,11 @@ import { realSessions, type Mode } from './lib/store';
 import { Hero, Home } from './screens/Home';
 import { MapScreen } from './screens/MapScreen';
 import { Practice } from './screens/Practice';
+import { Profile } from './screens/Profile';
 import { Progress } from './screens/Progress';
 import { Results } from './screens/Results';
 
-const ORDER: Tab[] = ['home', 'map', 'progress'];
+const ORDER: Tab[] = ['home', 'map', 'progress', 'profile'];
 // past: a saved round reopened from Progress, which returns there when closed; quiet: reopened by a reload, so no confetti
 type Overlay = { kind: 'practice'; round: Round } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean } | null;
 
@@ -110,6 +111,7 @@ export function App() {
           <Activity mode={mode('home')}><Home /></Activity>
           <Activity mode={mode('map')}><MapScreen /></Activity>
           <Activity mode={mode('progress')}><Progress /></Activity>
+          <Activity mode={mode('profile')}><Profile /></Activity>
         </div>
         <TabBar tab={tab} onGo={go} />
       </Activity>

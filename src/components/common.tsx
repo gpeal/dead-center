@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react';
 import { Icon } from './Icon';
 import { lab } from '../lib/keys';
-import type { Mode } from '../lib/store';
+import { isGuest, type Mode } from '../lib/store';
 import { buzz } from '../lib/feedback';
 import { clamp } from '../lib/util';
 
-export type Tab = 'home' | 'map' | 'progress';
+export type Tab = 'home' | 'map' | 'progress' | 'profile';
 export interface Actions {
   go(tab: Tab): void;
   openKey(k: string): void;
@@ -33,6 +33,7 @@ export function Topbar() {
         <Icon name="logo" />
         <b>Dead Center</b>
       </div>
+      {isGuest() && <span className="guest-chip">Guest</span>}
     </header>
   );
 }

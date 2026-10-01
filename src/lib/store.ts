@@ -43,11 +43,24 @@ export function hydrate(raw: any): State {
   });
 }
 export let storageOK = true;
+/* Guest mode lets someone else play on this phone: their rounds go into a separate, temporary profile (GUEST_KEY) that
+   never syncs and is deleted when guest mode is turned off, so the owner's rounds and stats are untouched. */
+const GUEST_FLAG = 'dc.guest', GUEST_KEY = 'deadcenter.guest';
+function readGuest() {
+  try {
+    return localStorage.getItem(GUEST_FLAG) === '1';
+  } catch {
+    return false;
+  }
+}
+let guest = readGuest();
+export const isGuest = () => guest;
+const activeKey = () => (guest ? GUEST_KEY : STORE_KEY);
 function load(): State {
   try {
     localStorage.setItem('dc.test', '1');
     localStorage.removeItem('dc.test');
-    const raw = localStorage.getItem(STORE_KEY);
+    const raw = localStorage.getItem(activeKey());
     if (raw) return hydrate(JSON.parse(raw));
   } catch {
     storageOK = false;
@@ -72,7 +85,7 @@ export const useStore = () => useSyncExternalStore(subscribe, () => version);
 
 function saveLocal() {
   try {
-    localStorage.setItem(STORE_KEY, JSON.stringify(store.S));
+    localStorage.setItem(activeKey(), JSON.stringify(store.S));
     storageOK = true;
   } catch {
     storageOK = false;
@@ -81,7 +94,23 @@ function saveLocal() {
 export function save(full?: boolean) {
   store.S.rev = Date.now();
   saveLocal();
-  cloudPush(!!full);
+  if (!guest) cloudPush(!!full);
+  emit();
+}
+/** Turns guest mode on (a fresh, separate profile) or off (back to your own; the guest's rounds are deleted). */
+export function setGuest(on: boolean) {
+  if (on === guest) return;
+  try {
+    if (on) localStorage.setItem(GUEST_FLAG, '1');
+    else {
+      localStorage.removeItem(GUEST_FLAG);
+      localStorage.removeItem(GUEST_KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+  guest = on;
+  store.S = load();
   emit();
 }
 export function replaceState(next: State) {
@@ -177,7 +206,7 @@ function mergeStates(base: State, other: State) {
 }
 export async function cloudInit() {
     const claude = (window as any).claude;
-  if (!claude || typeof claude.use !== 'function') return setSync('off');
+  if (guest || !claude || typeof claude.use !== 'function') return setSync('off'); // guests never sync
   try {
     const [db, user] = await Promise.all([claude.use('db'), claude.use('user')]);
     const uid = user ? await user.id() : null;
