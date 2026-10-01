@@ -369,16 +369,8 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 /* the floating banner hides while typing and on results; results shows it inline under its buttons instead */
 body:has(.practice,#results) .updbar:not(.inline){display:none}
 .updbar.inline{position:static;transform:none;align-self:center;animation:fadeIn .3s}
-.install{display:grid;grid-template-columns:36px 1fr auto;gap:12px;align-items:start;padding:14px 8px 14px 14px;background:var(--accent-soft);box-shadow:none}
-.install .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink)}
-.install .ic svg{width:20px;height:20px}
-.install b{display:block;font-weight:700;font-size:15px}
-.install span{display:block;font-size:13px;line-height:1.35;color:var(--ink-2);margin-top:3px}
-.install .note{color:var(--muted);margin-top:6px}
-.install .x{width:30px;height:30px;margin-top:-4px;color:var(--muted)}
-.install .x svg{width:16px;height:16px}
 .landing{max-width:480px;margin:0 auto;min-height:100%;padding:28px 20px calc(env(safe-area-inset-bottom,0px) + 24px);display:flex;flex-direction:column;gap:18px;animation:screenIn .35s cubic-bezier(.2,.8,.2,1)}
-.landing .back{margin:-6px 0 0 -8px}
+.landing .brand svg{width:34px;height:34px}
 .landing h1{font:850 30px/1 var(--f-display);font-variation-settings:"wdth" 126;letter-spacing:-.02em}
 .landing > p{color:var(--ink-2)}
 .install-steps{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
@@ -387,6 +379,8 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 .install-steps .ic svg{width:22px;height:22px}
 .install-steps .ic.logo svg{width:26px;height:26px}
 .install-steps small{display:block;font-size:12.5px;color:var(--muted);margin-top:2px}
+.landing-move{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:var(--surface);box-shadow:var(--shadow);font-size:13.5px;color:var(--ink-2)}
+.landing-move .btn{height:42px;font-size:14px}
 .warnbar{font-size:13px;padding:10px 12px;border-radius:12px;background:var(--gold-soft);color:var(--gold-ink)}
 @media (prefers-reduced-motion: reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}

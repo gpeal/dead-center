@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Icon } from '../components/Icon';
 import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/common';
 import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
@@ -6,7 +6,6 @@ import { heroAnim } from '../lib/draw';
 import { allTaps, realSessions, storageOK, store, syncState, useStore } from '../lib/store';
 import { pct } from '../lib/util';
 import { lab } from '../lib/keys';
-import { dismissInstall, shouldSuggestInstall } from '../lib/install';
 
 function Hero() {
   const { start, go } = useActions();
@@ -92,7 +91,6 @@ export function Home() {
   return (
     <main className="screen">
       <Topbar />
-      <InstallCard hasRounds={rs.length > 0} />
       {!storageOK && <div className="warnbar">This browser is blocking storage, so progress will reset when you close the page.</div>}
       {!rs.length && syncState() === 'loading' ? (
         <section className="card" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -112,26 +110,4 @@ export function Home() {
 function listKeys(keys: string[]) {
   const l = keys.map(lab);
   return l.length > 1 ? `${l.slice(0, -1).join(', ')} and ${l[l.length - 1]}` : l[0];
-}
-
-/** In Safari after rounds have been typed there: install steps, plus how to bring those rounds across (Safari and the
-    installed app keep separate storage). New visitors get the full-screen InstallLanding instead. */
-function InstallCard({ hasRounds }: { hasRounds: boolean }) {
-  const [hidden, setHidden] = useState(() => !hasRounds || !shouldSuggestInstall());
-  if (hidden) return null;
-  const dismiss = () => {
-    dismissInstall();
-    setHidden(true);
-  };
-  return (
-    <section className="card install">
-      <span className="ic"><Icon name="share" /></span>
-      <div>
-        <b>Add it to your Home Screen</b>
-        <span>Tap Share (under •••), then Add to Home Screen, for full screen and offline use.</span>
-        {hasRounds && <span className="note">Rounds typed in Safari stay here: move them with Progress › Backup, then Restore in the app.</span>}
-      </div>
-      <button className="iconbtn x" aria-label="Dismiss" onClick={dismiss}><Icon name="close" /></button>
-    </section>
-  );
 }
