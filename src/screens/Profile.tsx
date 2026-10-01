@@ -117,7 +117,7 @@ function GuestCard() {
       <div className="set">
         <div className="t">
           <b>Guest mode</b>
-          <span>{on ? (armed ? "Tap again: the guest's rounds will be deleted" : 'On: rounds go to a temporary guest profile') : 'Let someone else play without touching your stats'}</span>
+          <span>{armed ? "Tap again: the guest's rounds will be deleted" : 'Let a friend try Dead Center'}</span>
         </div>
         <button className="switch" role="switch" aria-label="Guest mode" aria-checked={on} onClick={toggle} />
       </div>
