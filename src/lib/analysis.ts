@@ -160,26 +160,97 @@ export function troubleKeys(taps: Tap[], max = 3) {
   }
   return out.sort((a, b) => b.pri - a.pri).slice(0, max);
 }
-export type RowAcc = { n: number; acc: number } | null;
-export type Pattern = { t: string; v: string; p: string } | { rows: [string, RowAcc][] };
+/* Zones: the three letter rows split into the left edge key, the rest of each thumb's keys, and the right edge key.
+   Averaging a zone's taps shows trends a single key is too noisy for. Edge keys drift in mirror image (Q and A pull
+   right when P and L pull left), so edge drift is also measured as inward, toward the middle, before pooling. */
+export interface Zone { row: number; side: number; keys: string[] }
+const ZONE_KEYS = [
+  ['q', 'wert', 'yuio', 'p'],
+  ['a', 'sdfg', 'hjk', 'l'],
+  ['z', 'xcvb', 'n', 'm'],
+];
+export const ZONES: Zone[] = ZONE_KEYS.flatMap((row, r) => row.map((keys, side) => ({ row: r, side, keys: keys.split('') })));
+export const ROW_NAMES = ['Top row', 'Home row', 'Bottom row'];
+const EDGE_KEYS = ZONES.filter((z) => z.side === 0 || z.side === 3).flatMap((z) => z.keys);
+/** Inward sideways drift: toward the middle of the keyboard is positive on both halves. */
+const inward = (k: string, dx: number) => (LEFT.has(k) ? dx : -dx);
+
+export interface ZoneStats { zone: Zone; n: number; acc: number; mx: number; my: number }
+interface Pool { n: number; w: number; w2: number; hit: number; sx: number; sy: number; si: number; syy: number; sii: number; keys: Record<string, { w: number; sy: number; si: number }> }
+function pool(taps: Tap[], wts: Float32Array, keys: Set<string>): Pool {
+  const p: Pool = { n: 0, w: 0, w2: 0, hit: 0, sx: 0, sy: 0, si: 0, syy: 0, sii: 0, keys: {} };
+  taps.forEach((t, i) => {
+    if (!keys.has(t.k) || wts[i] < 0.03) return;
+    const w = wts[i], kk = (p.keys[t.k] ||= { w: 0, sy: 0, si: 0 });
+    const ix = inward(t.k, t.dx);
+    p.n++; p.w += w; p.w2 += w * w; p.sx += w * t.dx; p.sy += w * t.dy; p.si += w * ix; p.syy += w * t.dy * t.dy; p.sii += w * ix * ix;
+    if (t.h === t.k) p.hit += w;
+    kk.w += w; kk.sy += w * t.dy; kk.si += w * inward(t.k, t.dx);
+  });
+  return p;
+}
+export function zoneStats(taps: Tap[], half = recentHalf()): ZoneStats[] {
+  const wts = recencyWeights(taps, half);
+  return ZONES.map((zone) => {
+    const p = pool(taps, wts, new Set(zone.keys));
+    return { zone, n: p.n, acc: p.w ? p.hit / p.w : 0, mx: p.w ? p.sx / p.w : 0, my: p.w ? p.sy / p.w : 0 };
+  });
+}
+/** Standard error of a pooled weighted mean, from its sum and sum of squares (neff = effective sample size). */
+function se(p: Pool, sum: number, sq: number) {
+  const m = sum / p.w, sd = Math.sqrt(Math.max(0, sq / p.w - m * m));
+  return sd / Math.sqrt((p.w * p.w) / p.w2);
+}
+/** A trend has to be at least a point and clearly more than the scatter of the taps behind it could make by chance. */
+const real = (d: number, err: number) => Math.abs(d) >= Math.max(1, 2.5 * err);
+/** How many of the group's keys (with enough taps) lean the same way as the pooled value; trends need most to agree. */
+function agree(p: Pool, val: (k: { w: number; sy: number; si: number }) => number, sign: number) {
+  const ks = Object.values(p.keys).filter((k) => k.w >= 2);
+  return ks.length >= 2 && ks.filter((k) => Math.sign(val(k)) === sign).length >= Math.ceil((ks.length * 2) / 3);
+}
+/** `m` ranks findings by size (points of drift); all-clear findings are 0. */
+export type Finding = { t: string; v: string; p: string; m?: number };
+/** Row and edge trends, only where the pooled drift is clearly real (see `real`) and most keys in the group agree. */
+export function zoneFindings(taps: Tap[], half = recentHalf()): Finding[] {
+  const wts = recencyWeights(taps, half), out: Finding[] = [];
+  const all = pool(taps, wts, new Set(ZONES.flatMap((z) => z.keys)));
+  if (all.n < 30) return out;
+  const myAll = all.sy / all.w;
+  if (real(myAll, se(all, all.sy, all.syy))) out.push({ t: myAll > 0 ? 'You land low overall' : 'You land high overall', v: `${fmt1(Math.abs(myAll))} pt`, p: myAll > 0 ? 'The most common thumb pattern. Aim at the top of each letter.' : 'Usually a low grip. Hold the phone a little higher.', m: Math.abs(myAll) });
+  else out.push({ t: 'Vertical aim is centered', v: `${fmt1(Math.abs(myAll))} pt`, p: 'Misses come from left-right drift or spread instead.', m: 0 });
+  // rows, against the median row so one odd row out is flagged without the other two reading as its mirror image
+  const rows = ROW_NAMES.map((_, r) => pool(taps, wts, new Set(ZONES.filter((z) => z.row === r).flatMap((z) => z.keys))));
+  const rowMy = rows.map((p) => (p.w ? p.sy / p.w : 0)), mid = median(rowMy), midRow = rows[rowMy.indexOf(mid)];
+  rows.forEach((p, r) => {
+    const d = rowMy[r] - mid;
+    if (p.n < 12 || !midRow.w || p === midRow) return;
+    // the row picked as the odd one out looks extreme partly by chance, and the median row has scatter too, so
+    // rows need a wider margin than the other trends
+    const err = Math.hypot(se(p, p.sy, p.syy), se(midRow, midRow.sy, midRow.syy)) * 1.2;
+    if (!real(d, err) || !agree(p, (k) => k.sy / k.w - mid, Math.sign(d))) return;
+    const where = r === 0 ? 'Q to P' : r === 1 ? 'A to L' : 'Z to M';
+    out.push({ t: `${ROW_NAMES[r]} lands ${d > 0 ? 'lower' : 'higher'} than the others`, v: `${fmt1(Math.abs(d))} pt`, p: `Aim a touch ${d > 0 ? 'higher' : 'lower'} on ${where}.`, m: Math.abs(d) });
+  });
+  // edges, pooled as inward drift
+  const e = pool(taps, wts, new Set(EDGE_KEYS)), inner = pool(taps, wts, new Set(ZONES.filter((z) => z.side === 1 || z.side === 2).flatMap((z) => z.keys)));
+  if (e.n >= 12 && inner.n >= 12) {
+    const inw = e.si / e.w, ea = e.hit / e.w, ma = inner.hit / inner.w, costs = ea < ma - 0.03, vs = costs ? ` ${pct(ea)}% vs ${pct(ma)}% for the rest.` : '';
+    if (real(inw, se(e, e.si, e.sii)) && agree(e, (k) => k.si / k.w, Math.sign(inw)))
+      out.push(inw > 0
+        ? { t: 'Edge keys pull inward', v: `${fmt1(inw)} pt`, p: `Q, A, Z, P, L and M land toward the middle. Reach all the way out.${vs}`, m: inw }
+        : { t: 'Edge keys overshoot', v: `${fmt1(-inw)} pt`, p: `Q, A, Z, P, L and M land toward the screen edge. Stop a little sooner.${vs}`, m: -inw });
+    else out.push(costs
+      ? { t: 'Edge keys cost you', v: `${pct(ea)}% vs ${pct(ma)}%`, p: 'No steady lean, so it is spread. Slow down on Q, A, Z, P, L and M.', m: 0.5 }
+      : { t: 'Edge keys hold up', v: `${pct(ea)}% vs ${pct(ma)}%`, p: 'The outer keys keep pace with the middle. Reach is fine.', m: 0 });
+  }
+  return out;
+}
+export type Pattern = Finding;
 export function patterns(taps: Tap[]): Pattern[] {
   const L = taps.slice(-3000), out: Pattern[] = [];
   if (L.length < 30) return out;
   const letters = L.filter((t) => KEY[t.k].type === 'letter');
-  const my = letters.reduce((a, t) => a + t.dy, 0) / letters.length;
-  if (Math.abs(my) >= 1) out.push({ t: my > 0 ? 'You land low overall' : 'You land high overall', v: `${fmt1(Math.abs(my))} pt`, p: my > 0 ? 'The most common thumb pattern. Aim at the top of each letter.' : 'Usually a low grip. Hold the phone a little higher.' });
-  else out.push({ t: 'Vertical aim is centered', v: `${fmt1(Math.abs(my))} pt`, p: 'Misses come from left-right drift or spread instead.' });
-  const rowAcc = (r: number): RowAcc => {
-    const a = L.filter((t) => KEY[t.k].row === r);
-    return a.length ? { n: a.length, acc: a.filter((t) => t.h === t.k).length / a.length } : null;
-  };
-  out.push({ rows: [['Top', rowAcc(0)], ['Home', rowAcc(1)], ['Bottom', rowAcc(2)], ['Space', rowAcc(3)]] });
-  const e = letters.filter((t) => EDGE.has(t.k)), m = letters.filter((t) => !EDGE.has(t.k));
-  if (e.length >= 15 && m.length >= 15) {
-    const ea = e.filter((t) => t.h === t.k).length / e.length, ma = m.filter((t) => t.h === t.k).length / m.length;
-    if (ma - ea > 0.03) out.push({ t: 'Edge keys cost you', v: `${pct(ea)}% vs ${pct(ma)}%`, p: 'Q, A, Z, P and L trail the rest. Aim past the letter on those.' });
-    else out.push({ t: 'Edge keys hold up', v: `${pct(ea)}% vs ${pct(ma)}%`, p: 'Q, A, Z, P and L keep pace with the middle. Reach is fine.' });
-  }
+  out.push(...zoneFindings(L, ALL));
   const lh = letters.filter((t) => LEFT.has(t.k)), rh = letters.filter((t) => RIGHT.has(t.k));
   if (lh.length >= 20 && rh.length >= 20) {
     const la = lh.filter((t) => t.h === t.k).length / lh.length, ra = rh.filter((t) => t.h === t.k).length / rh.length;

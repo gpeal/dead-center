@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import type { Tab } from '../components/common';
 import { KeyboardView } from '../components/KeyboardView';
 import { MissMap } from '../components/MissMap';
+import { ZoneLegend, ZoneMap } from '../components/ZoneMap';
 import { UpdateBanner } from '../components/Toasts';
-import { thumbTip, troubleKeys } from '../lib/analysis';
+import { ALL, thumbTip, troubleKeys, zoneFindings } from '../lib/analysis';
 import { ARROW_SCALE, drawMissKeys } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
@@ -63,6 +64,18 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
   }, [taps]);
 
   const [tip] = useState(() => thumbTip(taps, result.caseSlips, prec));
+  // Keys (each key's arrow and the worst keys magnified) or Zones (rows by side); the choice carries to later rounds
+  const [view, setView] = useState<View>(readView);
+  const pick = (v: View) => {
+    setView(v);
+    try {
+      localStorage.setItem(VIEW_KEY, v);
+    } catch {
+      /* ignore */
+    }
+  };
+  const findings = useMemo(() => topFindings(taps), [taps]);
+  const viewSeg = <ViewSeg view={view} onPick={pick} />;
   const slips = [
     result.caseSlips > 0 && `${result.caseSlips} wrong-case letter${result.caseSlips > 1 ? 's' : ''}`,
     result.realigns > 0 && `out of step ${result.realigns}× (not counted)`,
@@ -83,18 +96,28 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
             <div className={'tile' + (pbW ? ' best' : '')}><span className="eyebrow">{pbW ? 'Best WPM' : 'WPM'}</span><CountUp to={s.wpm || 0} /></div>
             <div className="tile"><span className="eyebrow">Combo</span><CountUp to={s.combo || 0} /></div>
           </div>
-          {missKeys.length ? (
+          {!taps.length ? (
+            <section className="card small muted">The tap details for this round are no longer stored; only the most recent 40,000 taps are kept.</section>
+          ) : view === 'zones' ? (
+            <section className="card mapcard">
+              <ZoneMap taps={taps} />
+              <div className="mapfoot"><ZoneLegend />{viewSeg}</div>
+              {findings.length > 0 && (
+                <div className="zfind">
+                  {findings.map((f) => <div key={f.t}><b>{f.t}</b><span className="mono small">{f.v}</span></div>)}
+                </div>
+              )}
+            </section>
+          ) : missKeys.length ? (
             <section className="card misses">
               <MissMap keys={missKeys} taps={taps} />
-              <ArrowLegend misses />
+              <div className="mapfoot"><ArrowLegend misses />{viewSeg}</div>
               {slips && <p className="slips">{slips}</p>}
             </section>
-          ) : !taps.length ? (
-            <section className="card small muted">The tap details for this round are no longer stored; only the most recent 40,000 taps are kept.</section>
           ) : (
             <section className="card mapcard">
               <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
-              <ArrowLegend />
+              <div className="mapfoot"><ArrowLegend />{viewSeg}</div>
               <div className="legend">
                 {slips ? <span>{slips}</span> : <><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
               </div>
@@ -121,6 +144,30 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
 }
 
 /** Explains the median arrows on the round's keyboard. */
+type View = 'keys' | 'zones';
+const VIEW_KEY = 'dc.resultsView';
+function readView(): View {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'zones' ? 'zones' : 'keys';
+  } catch {
+    return 'keys';
+  }
+}
+function ViewSeg({ view, onPick }: { view: View; onPick: (v: View) => void }) {
+  return (
+    <div className="seg small" role="group" aria-label="Tap map view">
+      {(['keys', 'zones'] as const).map((v) => (
+        <button key={v} aria-pressed={view === v} onClick={() => onPick(v)}>{v === 'keys' ? 'Keys' : 'Zones'}</button>
+      ))}
+    </div>
+  );
+}
+/** The round's two biggest trends; the all-clear lines only show when there is nothing else. */
+function topFindings(taps: Tap[]) {
+  const all = zoneFindings(taps, ALL);
+  const real = all.filter((f) => f.m).sort((a, b) => b.m! - a.m!);
+  return (real.length ? real : all).slice(0, 2);
+}
 function ArrowLegend({ misses = false }: { misses?: boolean }) {
   return (
     <div className="legend">

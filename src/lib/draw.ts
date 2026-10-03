@@ -1,10 +1,10 @@
 import { KEYS, KEY, KH, PITCH, TRAINABLE, hitTest } from './keys';
-import { ALL, recencyWeights, recentHalf, slowHalf, statsFor, type KeyStats } from './analysis';
+import { ALL, recencyWeights, recentHalf, slowHalf, statsFor, zoneStats, type KeyStats } from './analysis';
 import { clamp, cssVar, gauss, median, pct, reduceMotion, rng } from './util';
 import type { Kb } from './keyboard';
 import type { Tap } from './store';
 
-export type MapMode = 'heat' | 'aim' | 'miss';
+export type MapMode = 'heat' | 'aim' | 'zones' | 'miss';
 
 /* heat colour ramp: blue -> gold -> red, matching the target rings */
 const HEAT_STOPS: [number, number[]][] = [[0, [36, 88, 240, 0]], [0.18, [36, 88, 240, 110]], [0.45, [80, 140, 255, 170]], [0.65, [245, 179, 1, 205]], [0.85, [229, 72, 77, 225]], [1, [170, 20, 50, 235]]];
@@ -52,6 +52,7 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
   c.clearRect(0, 0, W, H);
   const P = (x: number, y: number) => kb.toPx(x, y);
   for (const k of KEYS) kb.keyEls[k.id].style.background = '';
+  kb.el.classList.toggle('dim', mode === 'zones');
   if (mode === 'heat') {
     const off = document.createElement('canvas');
     off.width = W * dpr;
@@ -136,6 +137,8 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
       c.stroke();
       c.globalAlpha = 1;
     }
+  } else if (mode === 'zones') {
+    paintZones(c, kb, taps, half);
   } else {
     const red = cssVar('--red'), green = cssVar('--green'), gold = cssVar('--gold');
     c.font = `500 ${Math.round(9 * kb.sx)}px ${cssVar('--f-mono')}`;
@@ -154,6 +157,65 @@ export function drawMap(cv: HTMLCanvasElement, kb: Kb, taps: Tap[], mode: MapMod
   }
 }
 export const ARROW_SCALE = 2;
+/** Zone drift is an average over several keys, so it's smaller than one key's; it's drawn longer to stay readable. */
+export const ZONE_SCALE = 4;
+/** Same miss-rate bands as the Misses map. */
+const missCol = (e: number) => cssVar(e < 0.03 ? '--green' : e < 0.09 ? '--gold' : '--red');
+/** Rows split by side (see ZONES): each zone's keys tinted by its accuracy, outlined together, with one drift arrow. */
+function paintZones(c: CanvasRenderingContext2D, kb: Kb, taps: Tap[], half: number) {
+  const ink = cssVar('--kb-ink'), halo = cssVar('--kb-key');
+  for (const z of zoneStats(taps, half)) {
+    if (z.n < 4) continue;
+    const ks = z.zone.keys.map((k) => KEY[k]), e = 1 - z.acc, col = missCol(e);
+    for (const k of ks) kb.keyEls[k.id].style.background = `color-mix(in srgb, ${col} ${Math.round(clamp(18 + e * 260, 18, 70))}%, var(--kb-key))`;
+    const x0 = Math.min(...ks.map((k) => k.x)), x1 = Math.max(...ks.map((k) => k.x + k.w)), y0 = ks[0].y, y1 = ks[0].y + ks[0].h;
+    const a = kb.toPx(x0 - 2, y0 - 2), b = kb.toPx(x1 + 2, y1 + 2);
+    c.strokeStyle = col;
+    c.lineWidth = 1.6;
+    c.beginPath();
+    c.roundRect(a.x, a.y, b.x - a.x, b.y - a.y, 10 * kb.sx);
+    c.stroke();
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2, o = kb.toPx(cx, cy), t = kb.toPx(cx + z.mx * ZONE_SCALE, cy + z.my * ZONE_SCALE);
+    const len = Math.hypot(t.x - o.x, t.y - o.y);
+    if (len < 3) {
+      c.fillStyle = ink;
+      c.beginPath(); c.arc(o.x, o.y, 3, 0, 7); c.fill();
+      continue;
+    }
+    // a key-coloured halo under the arrow keeps it readable over the letters
+    const ux = (t.x - o.x) / len, uy = (t.y - o.y) / len, h = Math.min(7, len * 0.6);
+    const head = () => {
+      c.beginPath();
+      c.moveTo(t.x, t.y);
+      c.lineTo(t.x - ux * h - uy * h * 0.6, t.y - uy * h + ux * h * 0.6);
+      c.lineTo(t.x - ux * h + uy * h * 0.6, t.y - uy * h - ux * h * 0.6);
+      c.closePath();
+    };
+    c.lineCap = 'round';
+    c.lineJoin = 'round';
+    for (const [stroke, w] of [[halo, 6], [ink, 2.6]] as const) {
+      c.strokeStyle = stroke;
+      c.fillStyle = stroke;
+      c.lineWidth = w;
+      c.beginPath(); c.moveTo(o.x, o.y); c.lineTo(t.x - ux * h * 0.6, t.y - uy * h * 0.6); c.stroke();
+      head();
+      if (stroke === halo) c.stroke();
+      c.fill();
+    }
+    c.beginPath(); c.arc(o.x, o.y, 2.4, 0, 7); c.fill();
+  }
+}
+/** The round's zones on their own canvas (the Results screen's Zones view; the Map uses drawMap). */
+export function drawZones(cv: HTMLCanvasElement, kb: Kb, taps: Tap[]) {
+  const { c, W, H } = sizeCanvas(cv, kb);
+  c.clearRect(0, 0, W, H);
+  for (const k of KEYS) {
+    kb.keyEls[k.id].style.background = '';
+    kb.keyEls[k.id].style.boxShadow = '';
+  }
+  kb.el.classList.add('dim');
+  paintZones(c, kb, taps, ALL);
+}
 /**
  * The round on the full keyboard: every key you typed gets one arrow from its center to your median tap (green,
  * gold or red by distance; a dot when you were dead on). The worst keys (`keys`) are also outlined, with a red dot

@@ -318,6 +318,13 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .statrow .tile .num{font-size:21px;line-height:1}
 .statrow .tile.best .eyebrow{color:var(--green)}
 .misses{padding:12px 12px 10px}
+.kb.dim .key span{opacity:.38}
+.mapfoot{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mapfoot .legend{flex:1;min-width:0}
+.mapfoot .seg.small{width:118px;flex:none}
+.zfind{display:flex;flex-direction:column;gap:6px;padding-inline:4px}
+.zfind div{display:flex;justify-content:space-between;gap:12px;font-size:13.5px}
+.zfind b{font-weight:700}
 .missmap{position:relative}
 .missmap-over{position:absolute;left:0;top:0;pointer-events:none}
 .missmap-loupe{position:absolute;top:2px;border-radius:50%}

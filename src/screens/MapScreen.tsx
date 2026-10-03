@@ -3,12 +3,13 @@ import { SectionH, Topbar, useActions, useScheme, TrendPill } from '../component
 import { KeyboardView } from '../components/KeyboardView';
 import { ALL, keyTrend, recentHalf, masteryLabel, patterns, statsFor, toneColor } from '../lib/analysis';
 import { drawMap, type MapMode } from '../lib/draw';
+import { ZoneLegend } from '../components/ZoneMap';
 import { glyph, hitTest, lab, TRAINABLE } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import { dataset, useStore } from '../lib/store';
 import { pct } from '../lib/util';
 
-const MODES: [MapMode, string][] = [['heat', 'Heat'], ['aim', 'Aim'], ['miss', 'Misses']];
+const MODES: [MapMode, string][] = [['heat', 'Heat'], ['aim', 'Aim'], ['zones', 'Zones'], ['miss', 'Misses']];
 
 function Legend({ mode, recent, taps }: { mode: MapMode; recent: boolean; taps: number }) {
   const note = recent ? 'recent taps count most' : `all ${taps.toLocaleString()} taps`;
@@ -26,6 +27,7 @@ function Legend({ mode, recent, taps }: { mode: MapMode; recent: boolean; taps: 
         <span>ring holds 86% of taps; on the key:</span> <span className="dot" style={{ background: 'var(--green)' }} />95%+ <span className="dot" style={{ background: 'var(--gold)' }} />80–95% <span className="dot" style={{ background: 'var(--red)' }} />less <span>· line = drift{recent ? ', faint = earlier' : ''}</span>
       </div>
     );
+  if (mode === 'zones') return <ZoneLegend />;
   return (
     <div className="legend">
       <span className="dot" style={{ background: 'var(--green)' }} />under 3% <span className="dot" style={{ background: 'var(--gold)' }} />3–9% <span className="dot" style={{ background: 'var(--red)' }} />over 9% <span>of taps missed · {note}</span>
@@ -98,40 +100,18 @@ export function MapScreen() {
           <SectionH title="Patterns"><span className="eyebrow">Last {Math.min(ds.taps.length, 3000).toLocaleString()} taps</span></SectionH>
           <section className="card">
             <div className="patterns">
-              {pats.map((p, i) =>
-                'rows' in p ? (
-                  <div className="prow" key={i}>
-                    <b>Accuracy by row</b>
-                    <span />
-                    <div className="rowbars" style={{ gridColumn: '1/-1', marginTop: 6 }}>
-                      {p.rows.filter((r) => r[1]).map(([n, o]) => (
-                        <RowBar key={n} name={n} acc={o!.acc} />
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="prow" key={i}>
-                    <b>{p.t}</b>
-                    <span className="mono small">{p.v}</span>
-                    <p>{p.p}</p>
-                  </div>
-                ),
-              )}
+              {pats.map((p, i) => (
+                <div className="prow" key={i}>
+                  <b>{p.t}</b>
+                  <span className="mono small">{p.v}</span>
+                  <p>{p.p}</p>
+                </div>
+              ))}
             </div>
           </section>
         </>
       )}
     </main>
-  );
-}
-
-function RowBar({ name, acc }: { name: string; acc: number }) {
-  return (
-    <>
-      <span>{name}</span>
-      <span className="track"><i style={{ width: pct(acc) + '%', background: toneColor(acc >= 0.95 ? 'good' : acc >= 0.9 ? 'warn' : 'bad') }} /></span>
-      <span className="m">{pct(acc)}%</span>
-    </>
   );
 }
 
