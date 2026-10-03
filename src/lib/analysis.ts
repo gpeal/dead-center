@@ -160,32 +160,35 @@ export function troubleKeys(taps: Tap[], max = 3) {
   }
   return out.sort((a, b) => b.pri - a.pri).slice(0, max);
 }
-/* Zones: the three letter rows split into the left edge key, the rest of each thumb's keys, and the right edge key.
-   Averaging a zone's taps shows trends a single key is too noisy for. Edge keys drift in mirror image (Q and A pull
-   right when P and L pull left), so edge drift is also measured as inward, toward the middle, before pooling. */
+/* Zones: each letter row split between the thumbs (the usual T/Y, G/H, B/N handoff). Rows and thumbs are where real
+   typing drift lives: rows pull up or down together, and each thumb leans to one side. Averaging a zone's taps shows
+   those trends sooner than single keys, which are too noisy. Edge keys drift in mirror image (Q and A pull right when
+   P and L pull left), so their drift is measured as inward, toward the middle, before pooling. */
 export interface Zone { row: number; side: number; keys: string[] }
 const ZONE_KEYS = [
-  ['q', 'wert', 'yuio', 'p'],
-  ['a', 'sdfg', 'hjk', 'l'],
-  ['z', 'xcvb', 'n', 'm'],
+  ['qwert', 'yuiop'],
+  ['asdfg', 'hjkl'],
+  ['zxcvb', 'nm'],
 ];
 export const ZONES: Zone[] = ZONE_KEYS.flatMap((row, r) => row.map((keys, side) => ({ row: r, side, keys: keys.split('') })));
 export const ROW_NAMES = ['Top row', 'Home row', 'Bottom row'];
-const EDGE_KEYS = ZONES.filter((z) => z.side === 0 || z.side === 3).flatMap((z) => z.keys);
+const EDGE_KEYS = 'qazplm'.split('');
+const keysWhere = (f: (z: Zone) => boolean) => new Set(ZONES.filter(f).flatMap((z) => z.keys));
 /** Inward sideways drift: toward the middle of the keyboard is positive on both halves. */
 const inward = (k: string, dx: number) => (LEFT.has(k) ? dx : -dx);
 
 export interface ZoneStats { zone: Zone; n: number; acc: number; mx: number; my: number }
-interface Pool { n: number; w: number; w2: number; hit: number; sx: number; sy: number; si: number; syy: number; sii: number; keys: Record<string, { w: number; sy: number; si: number }> }
+type KeyPool = { w: number; sx: number; sy: number; si: number };
+interface Pool { n: number; w: number; w2: number; hit: number; sx: number; sy: number; si: number; sxx: number; syy: number; sii: number; keys: Record<string, KeyPool> }
 function pool(taps: Tap[], wts: Float32Array, keys: Set<string>): Pool {
-  const p: Pool = { n: 0, w: 0, w2: 0, hit: 0, sx: 0, sy: 0, si: 0, syy: 0, sii: 0, keys: {} };
+  const p: Pool = { n: 0, w: 0, w2: 0, hit: 0, sx: 0, sy: 0, si: 0, sxx: 0, syy: 0, sii: 0, keys: {} };
   taps.forEach((t, i) => {
     if (!keys.has(t.k) || wts[i] < 0.03) return;
-    const w = wts[i], kk = (p.keys[t.k] ||= { w: 0, sy: 0, si: 0 });
+    const w = wts[i], kk = (p.keys[t.k] ||= { w: 0, sx: 0, sy: 0, si: 0 });
     const ix = inward(t.k, t.dx);
-    p.n++; p.w += w; p.w2 += w * w; p.sx += w * t.dx; p.sy += w * t.dy; p.si += w * ix; p.syy += w * t.dy * t.dy; p.sii += w * ix * ix;
+    p.n++; p.w += w; p.w2 += w * w; p.sx += w * t.dx; p.sy += w * t.dy; p.si += w * ix; p.sxx += w * t.dx * t.dx; p.syy += w * t.dy * t.dy; p.sii += w * ix * ix;
     if (t.h === t.k) p.hit += w;
-    kk.w += w; kk.sy += w * t.dy; kk.si += w * inward(t.k, t.dx);
+    kk.w += w; kk.sx += w * t.dx; kk.sy += w * t.dy; kk.si += w * ix;
   });
   return p;
 }
@@ -204,7 +207,7 @@ function se(p: Pool, sum: number, sq: number) {
 /** A trend has to be at least a point and clearly more than the scatter of the taps behind it could make by chance. */
 const real = (d: number, err: number) => Math.abs(d) >= Math.max(1, 2.5 * err);
 /** How many of the group's keys (with enough taps) lean the same way as the pooled value; trends need most to agree. */
-function agree(p: Pool, val: (k: { w: number; sy: number; si: number }) => number, sign: number) {
+function agree(p: Pool, val: (k: KeyPool) => number, sign: number) {
   const ks = Object.values(p.keys).filter((k) => k.w >= 2);
   return ks.length >= 2 && ks.filter((k) => Math.sign(val(k)) === sign).length >= Math.ceil((ks.length * 2) / 3);
 }
@@ -218,21 +221,43 @@ export function zoneFindings(taps: Tap[], half = recentHalf()): Finding[] {
   const myAll = all.sy / all.w;
   if (real(myAll, se(all, all.sy, all.syy))) out.push({ t: myAll > 0 ? 'You land low overall' : 'You land high overall', v: `${fmt1(Math.abs(myAll))} pt`, p: myAll > 0 ? 'The most common thumb pattern. Aim at the top of each letter.' : 'Usually a low grip. Hold the phone a little higher.', m: Math.abs(myAll) });
   else out.push({ t: 'Vertical aim is centered', v: `${fmt1(Math.abs(myAll))} pt`, p: 'Misses come from left-right drift or spread instead.', m: 0 });
-  // rows, against the median row so one odd row out is flagged without the other two reading as its mirror image
-  const rows = ROW_NAMES.map((_, r) => pool(taps, wts, new Set(ZONES.filter((z) => z.row === r).flatMap((z) => z.keys))));
-  const rowMy = rows.map((p) => (p.w ? p.sy / p.w : 0)), mid = median(rowMy), midRow = rows[rowMy.indexOf(mid)];
-  rows.forEach((p, r) => {
-    const d = rowMy[r] - mid;
-    if (p.n < 12 || !midRow.w || p === midRow) return;
-    // the row picked as the odd one out looks extreme partly by chance, and the median row has scatter too, so
-    // rows need a wider margin than the other trends
-    const err = Math.hypot(se(p, p.sy, p.syy), se(midRow, midRow.sy, midRow.syy)) * 1.2;
-    if (!real(d, err) || !agree(p, (k) => k.sy / k.w - mid, Math.sign(d))) return;
-    const where = r === 0 ? 'Q to P' : r === 1 ? 'A to L' : 'Z to M';
-    out.push({ t: `${ROW_NAMES[r]} lands ${d > 0 ? 'lower' : 'higher'} than the others`, v: `${fmt1(Math.abs(d))} pt`, p: `Aim a touch ${d > 0 ? 'higher' : 'lower'} on ${where}.`, m: Math.abs(d) });
+  // rows, against the home row: the top and bottom rows are the long reaches, and usually move in opposite directions
+  const rows = ROW_NAMES.map((_, r) => pool(taps, wts, keysWhere((z) => z.row === r))), home = rows[1];
+  if (home.n >= 12) {
+    const homeMy = home.sy / home.w;
+    const lean = [0, 2].map((r) => {
+      const p = rows[r], d = p.w ? p.sy / p.w - homeMy : 0;
+      // two rows are tested, so each needs a wider margin than a single trend
+      const ok = p.n >= 12 && real(d, Math.hypot(se(p, p.sy, p.syy), se(home, home.sy, home.syy)) * 1.2) && agree(p, (k) => k.sy / k.w - homeMy, Math.sign(d));
+      return ok ? d : 0;
+    });
+    // the pull is tested as one measure, half the gap between the top and bottom rows, which is steadier than either
+    // row against home; the rows only have to sit on the expected sides of home
+    const T0 = rows[0], B2 = rows[2], tMy = T0.w ? T0.sy / T0.w - homeMy : 0, bMy = B2.w ? B2.sy / B2.w - homeMy : 0;
+    const gap = (tMy - bMy) / 2, gapErr = (Math.hypot(se(T0, T0.sy, T0.syy), se(B2, B2.sy, B2.syy)) / 2) * 1.2;
+    const both = T0.n >= 12 && B2.n >= 12 && real(gap, gapErr) && Math.sign(tMy) === Math.sign(gap) && Math.sign(bMy) === -Math.sign(gap);
+    const [top, bot] = both ? [tMy, bMy] : lean;
+    if (top > 0 && bot < 0) out.push({ t: 'Your taps pull toward the home row', v: `${fmt1((top - bot) / 2)} pt`, p: `The top row lands ${fmt1(top)} pt low and the bottom row ${fmt1(-bot)} pt high. Reach a little further up and down from the home row.`, m: (top - bot) / 2 });
+    else if (top < 0 && bot > 0) out.push({ t: 'Your taps drift away from the home row', v: `${fmt1((bot - top) / 2)} pt`, p: `The top row lands ${fmt1(-top)} pt high and the bottom row ${fmt1(bot)} pt low. Stop a little short on the outer rows.`, m: (bot - top) / 2 });
+    else
+      lean.forEach((d, i) => {
+        if (!d) return;
+        const where = i ? 'Z to M' : 'Q to P';
+        out.push({ t: `${i ? 'Bottom' : 'Top'} row lands ${d > 0 ? 'lower' : 'higher'} than the home row`, v: `${fmt1(Math.abs(d))} pt`, p: `Aim a touch ${d > 0 ? 'higher' : 'lower'} on ${where}.`, m: Math.abs(d) });
+      });
+  }
+  // each thumb's sideways lean across all its keys
+  ([['left', 0], ['right', 1]] as const).forEach(([name, side]) => {
+    const p = pool(taps, wts, keysWhere((z) => z.side === side));
+    if (p.n < 20) return;
+    const mx = p.sx / p.w;
+    // two thumbs are tested, so each needs the same wider margin as the rows
+    if (!real(mx, se(p, p.sx, p.sxx) * 1.2) || !agree(p, (k) => k.sx / k.w, Math.sign(mx))) return;
+    const dir = mx > 0 ? 'right' : 'left', back = mx > 0 ? 'left' : 'right', toCenter = (side === 0) === (mx > 0);
+    out.push({ t: `Your ${name} thumb lands ${dir}`, v: `${fmt1(Math.abs(mx))} pt`, p: `Across its keys, ${toCenter ? 'past where you aim, toward the middle' : 'short of the middle, toward the screen edge'}. Aim a touch ${back} with your ${name} thumb.`, m: Math.abs(mx) });
   });
   // edges, pooled as inward drift
-  const e = pool(taps, wts, new Set(EDGE_KEYS)), inner = pool(taps, wts, new Set(ZONES.filter((z) => z.side === 1 || z.side === 2).flatMap((z) => z.keys)));
+  const edges = new Set(EDGE_KEYS), e = pool(taps, wts, edges), inner = pool(taps, wts, new Set(ZONES.flatMap((z) => z.keys).filter((k) => !edges.has(k))));
   if (e.n >= 12 && inner.n >= 12) {
     const inw = e.si / e.w, ea = e.hit / e.w, ma = inner.hit / inner.w, costs = ea < ma - 0.03, vs = costs ? ` ${pct(ea)}% vs ${pct(ma)}% for the rest.` : '';
     if (real(inw, se(e, e.si, e.sii)) && agree(e, (k) => k.si / k.w, Math.sign(inw)))
