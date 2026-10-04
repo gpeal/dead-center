@@ -99,14 +99,11 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
           {!taps.length ? (
             <section className="card small muted">The tap details for this round are no longer stored; only the most recent 40,000 taps are kept.</section>
           ) : view === 'zones' ? (
-            <section className="card mapcard">
-              <ZoneMap taps={taps} />
+            // laid out like the Keys view below it (same card, strip and footer) so switching doesn't shift anything
+            <section className={'card ' + (missKeys.length ? 'misses' : 'mapcard')}>
+              <ZoneMap taps={taps} strip={missKeys.length ? <Findings f={findings} /> : undefined} />
               <div className="mapfoot"><ZoneLegend />{viewSeg}</div>
-              {findings.length > 0 && (
-                <div className="zfind">
-                  {findings.map((f) => <div key={f.t}><b>{f.t}</b><span className="mono small">{f.v}</span></div>)}
-                </div>
-              )}
+              {missKeys.length ? slips && <p className="slips">{slips}</p> : <Findings f={findings} />}
             </section>
           ) : missKeys.length ? (
             <section className="card misses">
@@ -162,11 +159,15 @@ function ViewSeg({ view, onPick }: { view: View; onPick: (v: View) => void }) {
     </div>
   );
 }
-/** The round's two biggest trends; the all-clear lines only show when there is nothing else. */
+/** The round's three biggest trends; the all-clear lines only show when there is nothing else. */
 function topFindings(taps: Tap[]) {
   const all = zoneFindings(taps, ALL);
   const real = all.filter((f) => f.m).sort((a, b) => b.m! - a.m!);
-  return (real.length ? real : all).slice(0, 2);
+  return (real.length ? real : all).slice(0, 3);
+}
+function Findings({ f }: { f: ReturnType<typeof topFindings> }) {
+  if (!f.length) return <div className="zfind"><div><span className="muted">No row or thumb trend this round.</span></div></div>;
+  return <div className="zfind">{f.map((x) => <div key={x.t}><b>{x.t}</b><span className="mono small">{x.v}</span></div>)}</div>;
 }
 function ArrowLegend({ misses = false }: { misses?: boolean }) {
   return (

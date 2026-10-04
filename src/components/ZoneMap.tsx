@@ -1,18 +1,31 @@
-import { useCallback } from 'react';
+import { useCallback, useState, type ReactNode } from 'react';
 import { useScheme } from './common';
 import { KeyboardView } from './KeyboardView';
 import { drawZones, ZONE_SCALE } from '../lib/draw';
 import type { Kb } from '../lib/keyboard';
 import type { Tap } from '../lib/store';
 
-/** The round's taps by zone (see ZONES in analysis): rows split by side, one averaged drift arrow each. */
-export function ZoneMap({ taps }: { taps: Tap[] }) {
+/**
+ * The round's taps by zone (see ZONES in analysis): rows split by side, one averaged drift arrow each. With `strip`,
+ * the space above the keyboard matches the Keys view's magnifier strip (same formula as MissMap) and holds `strip`'s
+ * content, so switching views doesn't move the keyboard.
+ */
+export function ZoneMap({ taps, strip }: { taps: Tap[]; strip?: ReactNode }) {
   const scheme = useScheme();
+  const [stripH, setStripH] = useState(130);
   const paint = useCallback((kb: Kb) => {
     const cv = kb.el.parentElement?.querySelector('canvas');
     if (cv) drawZones(cv, kb, taps);
+    setStripH(Math.min(112, Math.floor((kb.el.clientWidth - 20) / 3)) + 26);
   }, [taps, scheme]);
-  return <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>;
+  const map = <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>;
+  if (strip === undefined) return map;
+  return (
+    <div className="zonemap">
+      <div className="zstrip" style={{ height: stripH }}>{strip}</div>
+      {map}
+    </div>
+  );
 }
 
 export function ZoneLegend() {
