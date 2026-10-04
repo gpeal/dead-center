@@ -43,9 +43,10 @@ export function Hero({ onContinue }: { onContinue?: () => void }) {
   );
 }
 
+/** Only shows for a moment: once there are rounds, the Type tab opens straight into one (see App). */
 function Dashboard() {
-  const { start, go, openKey } = useActions();
-  const S = store.S, rs = realSessions(), taps = allTaps();
+  const { start } = useActions();
+  const S = store.S, taps = allTaps();
   const tk = troubleKeys(taps);
   return (
     <>
@@ -63,17 +64,20 @@ function Dashboard() {
             <Icon name="chev" />
           </button>
         )}
-        {!rs.some((s) => s.mode === 'baseline') && (
-          <button className="drillbtn" onClick={() => start('baseline')}>
-            <span className="keys"><Kc k="a" size="sm" /><Kc k="z" size="sm" /></span>
-            <span className="t">Take the baseline<span>Covers every letter so the map is complete</span></span>
-            <Icon name="chev" />
-          </button>
-        )}
       </section>
-      <SectionH title="Fix these next">
-        <button className="eyebrow" onClick={() => go('map')}>Full map ›</button>
-      </SectionH>
+      <FixNext />
+    </>
+  );
+}
+
+/** The weakest keys with what's going wrong on each, plus the baseline until it's done (on the Map tab). */
+export function FixNext() {
+  const { start, openKey } = useActions();
+  const rs = realSessions(), taps = allTaps(), tk = troubleKeys(taps);
+  if (!rs.length) return null;
+  return (
+    <>
+      <SectionH title="Fix these next" />
       {tk.length ? (
         <div className="klist">
           {tk.map(({ k, s }) => {
@@ -89,6 +93,13 @@ function Dashboard() {
         </div>
       ) : (
         <div className="card small muted">{taps.length < 150 ? 'A couple more rounds and your weakest keys show up here.' : 'Every key is above 97%. Rounds keep testing the harder ones.'}</div>
+      )}
+      {!rs.some((s) => s.mode === 'baseline') && (
+        <button className="drillbtn" onClick={() => start('baseline')}>
+          <span className="keys"><Kc k="a" size="sm" /><Kc k="z" size="sm" /></span>
+          <span className="t">Take the baseline<span>Covers every letter so the map is complete</span></span>
+          <Icon name="chev" />
+        </button>
       )}
     </>
   );

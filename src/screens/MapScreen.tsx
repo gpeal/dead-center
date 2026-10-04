@@ -4,6 +4,7 @@ import { KeyboardView } from '../components/KeyboardView';
 import { ALL, keyTrend, recentHalf, masteryLabel, patterns, statsFor, toneColor } from '../lib/analysis';
 import { drawMap, type MapMode } from '../lib/draw';
 import { ZoneLegend } from '../components/ZoneMap';
+import { FixNext } from './Home';
 import { glyph, hitTest, lab, TRAINABLE } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import { dataset, useStore } from '../lib/store';
@@ -81,6 +82,7 @@ export function MapScreen() {
         </KeyboardView>
         <Legend mode={mode} recent={range === 'recent'} taps={ds.taps.length} />
       </section>
+      {!ds.sample && <FixNext />}
       {!low.length && <div className="card small muted">No taps yet. Finish a round and your map fills in.</div>}
       {low.length > 0 && <SectionH title="Lowest accuracy"><span className="eyebrow">Tap a key</span></SectionH>}
       {low.length > 0 && <section className="card" style={{ padding: '14px 16px' }}>
