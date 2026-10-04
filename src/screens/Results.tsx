@@ -133,7 +133,7 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
             <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />{past ? 'Start a round' : 'Next round'}</button>
             <div className="btnrow">
               {focus.length > 0 && <button className="btn gold" onClick={() => onStart('drill', focus)}><Icon name="target" />Drill {focus.map(lab).join(' ')}</button>}
-              <button className="btn ghost" onClick={() => onClose('map')}>Tap map</button>
+              <button className="btn ghost" onClick={() => onClose('progress')}>Tap map</button>
             </div>
             <UpdateBanner inline />
           </div>

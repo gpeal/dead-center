@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Icon } from '../components/Icon';
 import { KeyboardView } from '../components/KeyboardView';
+import { UpdateBanner } from '../components/Toasts';
 import type { Tab } from '../components/common';
 import { troubleKeys } from '../lib/analysis';
 import { lab } from '../lib/keys';
@@ -97,7 +98,6 @@ export function Practice({ round: r, home = false, tip, onExit, onSwitch, onNav 
               )}
             </div>
             <nav className="p-nav" aria-label="Sections">
-              <button className="iconbtn" aria-label="Map" onClick={() => onNav?.('map')}><Icon name="kbd" /></button>
               <button className="iconbtn" aria-label="Progress" onClick={() => onNav?.('progress')}><Icon name="chart" /></button>
               <button className="iconbtn" aria-label="Profile" onClick={() => onNav?.('profile')}><Icon name={isGuest() ? 'guest' : 'person'} /></button>
             </nav>
@@ -129,6 +129,8 @@ export function Practice({ round: r, home = false, tip, onExit, onSwitch, onNav 
             <span className="num">{r.precN ? pct(r.precSum / r.precN) + '%' : '–'}</span>
           </div>
         </div>
+        {/* the floating update banner hides during rounds, and the Type tab is always a round, so it shows here until the first tap */}
+        {waiting && <UpdateBanner inline />}
         <div className="p-text">
           <div className="p-hint">
             <span className={'pill ' + hint.tone}>{hint.label}</span> {hint.text}

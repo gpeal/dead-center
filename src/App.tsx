@@ -9,13 +9,12 @@ import { pastResult, Round, type RoundResult } from './lib/round';
 import { thumbTip, troubleKeys } from './lib/analysis';
 import { allTaps, realSessions, save, store, useStore, type Mode } from './lib/store';
 import { Hero, Home } from './screens/Home';
-import { MapScreen } from './screens/MapScreen';
 import { Practice } from './screens/Practice';
 import { Profile } from './screens/Profile';
 import { Progress } from './screens/Progress';
 import { Results } from './screens/Results';
 
-const ORDER: Tab[] = ['home', 'map', 'progress', 'profile'];
+const ORDER: Tab[] = ['home', 'progress', 'profile'];
 // past: a saved round reopened from Progress, which returns there when closed; quiet: reopened by a reload, so no confetti
 // home: the round waiting on the Type tab, which opens straight into typing once the baseline is done
 type Overlay = { kind: 'practice'; round: Round; home?: boolean; tip?: string } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean; home?: boolean } | null;
@@ -142,7 +141,6 @@ export function App() {
       <Activity mode={overlay ? 'hidden' : 'visible'}>
         <div className="app" style={{ '--dx': dir * 18 + 'px' } as React.CSSProperties}>
           <Activity mode={mode('home')}><Home /></Activity>
-          <Activity mode={mode('map')}><MapScreen /></Activity>
           <Activity mode={mode('progress')}><Progress /></Activity>
           <Activity mode={mode('profile')}><Profile /></Activity>
         </div>

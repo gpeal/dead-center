@@ -4,8 +4,7 @@ import type { Tab } from './common';
 import { isGuest, useStore } from '../lib/store';
 
 const TABS: { id: Tab; label: string; icon: IconName }[] = [
-  { id: 'home', label: 'Type', icon: 'target' },
-  { id: 'map', label: 'Map', icon: 'kbd' },
+  { id: 'home', label: 'Type', icon: 'kbd' },
   { id: 'progress', label: 'Progress', icon: 'chart' },
   { id: 'profile', label: 'Profile', icon: 'person' },
 ];

@@ -1,10 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { Icon } from '../components/Icon';
-import { Kc, SectionH, Topbar, TrendPill, useActions } from '../components/common';
-import { diagnose, keyTrend, troubleKeys } from '../lib/analysis';
+import { Kc, Topbar, useActions } from '../components/common';
+import { troubleKeys } from '../lib/analysis';
 import { heroAnim } from '../lib/draw';
 import { allTaps, realSessions, storageOK, store, syncState, useStore, isGuest } from '../lib/store';
-import { pct } from '../lib/util';
 import { lab } from '../lib/keys';
 
 /** The first-run hook. In iPhone Safari (`onContinue`) its button leads to the Add to Home Screen page instead of a round. */
@@ -32,7 +31,7 @@ export function Hero({ onContinue }: { onContinue?: () => void }) {
               Take the baseline
             </button>
             {!isGuest() && (
-              <button className="linkbtn small" style={{ alignSelf: 'center' }} onClick={() => go('map')}>
+              <button className="linkbtn small" style={{ alignSelf: 'center' }} onClick={() => go('progress')}>
                 Preview with sample data
               </button>
             )}
@@ -65,42 +64,6 @@ function Dashboard() {
           </button>
         )}
       </section>
-      <FixNext />
-    </>
-  );
-}
-
-/** The weakest keys with what's going wrong on each, plus the baseline until it's done (on the Map tab). */
-export function FixNext() {
-  const { start, openKey } = useActions();
-  const rs = realSessions(), taps = allTaps(), tk = troubleKeys(taps);
-  if (!rs.length) return null;
-  return (
-    <>
-      <SectionH title="Fix these next" />
-      {tk.length ? (
-        <div className="klist">
-          {tk.map(({ k, s }) => {
-            const dg = diagnose(s);
-            return (
-              <button key={k} className="krow" onClick={() => openKey(k)}>
-                <Kc k={k} />
-                <span className="d"><b>{dg.headline}</b><span>{dg.short}</span></span>
-                <span className="v"><span className="num">{pct(s.acc)}%</span><TrendPill tr={keyTrend(taps, k)} /></span>
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        <div className="card small muted">{taps.length < 150 ? 'A couple more rounds and your weakest keys show up here.' : 'Every key is above 97%. Rounds keep testing the harder ones.'}</div>
-      )}
-      {!rs.some((s) => s.mode === 'baseline') && (
-        <button className="drillbtn" onClick={() => start('baseline')}>
-          <span className="keys"><Kc k="a" size="sm" /><Kc k="z" size="sm" /></span>
-          <span className="t">Take the baseline<span>Covers every letter so the map is complete</span></span>
-          <Icon name="chev" />
-        </button>
-      )}
     </>
   );
 }

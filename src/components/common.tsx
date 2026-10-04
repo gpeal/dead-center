@@ -5,7 +5,7 @@ import { isGuest, type Mode } from '../lib/store';
 import { buzz } from '../lib/feedback';
 import { clamp } from '../lib/util';
 
-export type Tab = 'home' | 'map' | 'progress' | 'profile';
+export type Tab = 'home' | 'progress' | 'profile';
 export interface Actions {
   go(tab: Tab): void;
   openKey(k: string): void;

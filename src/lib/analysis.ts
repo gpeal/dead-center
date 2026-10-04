@@ -144,14 +144,6 @@ export function diagnose(s: KeyStats): Diagnosis {
   if (!fixes.length && s.acc < 0.95) fixes.push(HOVER);
   return { headline, short, why, fixes: [...new Set(fixes)].slice(0, 3), tone: s.acc >= 0.95 ? 'good' : s.acc >= 0.88 ? 'warn' : 'bad' };
 }
-/** What to change for the thumb that misses more, from which way its misses drift. */
-function sideTip(side: 'left' | 'right', taps: Tap[]) {
-  const miss = taps.filter((t) => t.h !== t.k);
-  const mx = miss.length ? miss.reduce((a, t) => a + t.dx, 0) / miss.length : 0, my = miss.length ? miss.reduce((a, t) => a + t.dy, 0) / miss.length : 0;
-  const inward = side === 'left' ? mx > 0 : mx < 0;
-  if (Math.abs(my) > Math.abs(mx)) return my > 0 ? `Aim your ${side} thumb at the top edge of each letter: its misses land low.` : `Let your ${side} thumb drop onto the lower half of each letter: its misses land high.`;
-  return inward ? `Aim your ${side} thumb a little toward its own edge of the keyboard: its misses drift toward the middle.` : `Bring your ${side} thumb onto keys from below, not from the side: its misses drift outward.`;
-}
 export function troubleKeys(taps: Tap[], max = 3) {
   const out: { k: string; s: KeyStats; pri: number }[] = [];
   for (const k of TRAINABLE) {
@@ -267,35 +259,6 @@ export function zoneFindings(taps: Tap[], half = recentHalf()): Finding[] {
     else out.push(costs
       ? { t: 'Edge keys cost you', v: `${pct(ea)}% vs ${pct(ma)}%`, p: 'No steady lean, so it is spread. Slow down on Q, A, Z, P, L and M.', m: 0.5 }
       : { t: 'Edge keys hold up', v: `${pct(ea)}% vs ${pct(ma)}%`, p: 'The outer keys keep pace with the middle. Reach is fine.', m: 0 });
-  }
-  return out;
-}
-export type Pattern = Finding;
-export function patterns(taps: Tap[]): Pattern[] {
-  const L = taps.slice(-3000), out: Pattern[] = [];
-  if (L.length < 30) return out;
-  const letters = L.filter((t) => KEY[t.k].type === 'letter');
-  out.push(...zoneFindings(L, ALL));
-  const lh = letters.filter((t) => LEFT.has(t.k)), rh = letters.filter((t) => RIGHT.has(t.k));
-  if (lh.length >= 20 && rh.length >= 20) {
-    const la = lh.filter((t) => t.h === t.k).length / lh.length, ra = rh.filter((t) => t.h === t.k).length / rh.length;
-    out.push({ t: Math.abs(la - ra) < 0.02 ? 'Both thumbs are even' : la < ra ? 'Left thumb misses more' : 'Right thumb misses more', v: `L ${pct(la)}% · R ${pct(ra)}%`, p: Math.abs(la - ra) < 0.02 ? 'Both halves are within two points.' : sideTip(la < ra ? 'left' : 'right', la < ra ? lh : rh) });
-  }
-  // a miss counts as rushed when it came clearly faster than that key's own hits (the letter before sets the pace,
-  // so comparing across keys would mostly measure which letters came first)
-  const okDt = (t: Tap) => t.dt > 0 && t.dt < 2500, hitMed: Record<string, number> = {};
-  for (const k of new Set(L.map((t) => t.k))) {
-    const h = L.filter((t) => t.k === k && t.h === k && okDt(t)).map((t) => t.dt);
-    if (h.length >= 5) hitMed[k] = median(h);
-  }
-  const timed = L.filter((t) => t.h !== t.k && okDt(t) && hitMed[t.k]);
-  if (timed.length >= 6) {
-    const rushed = timed.filter((t) => t.dt < 0.8 * hitMed[t.k]);
-    const pair = Object.entries(rushed.reduce<Record<string, Tap[]>>((a, t) => ((a[t.k] ||= []).push(t), a), {})).sort((a, b) => b[1].length - a[1].length)[0];
-    const fix = rushed.length / timed.length >= 0.5 && pair ? transitionFix(pair[0], pair[1]) : null;
-    out.push(fix
-      ? { t: 'Misses come when you rush', v: `${rushed.length} of ${timed.length}`, p: fix }
-      : { t: 'Speed is not the problem', v: `${rushed.length} of ${timed.length}`, p: 'Most misses come at your normal rhythm, so aim is the thing to work on.' });
   }
   return out;
 }

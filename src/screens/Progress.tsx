@@ -1,9 +1,8 @@
 import { useMemo } from 'react';
-import { Icon, Ring } from '../components/Icon';
+import { Icon } from '../components/Icon';
+import { TapMap } from '../components/TapMap';
 import { LineChart, SectionH, Topbar, useActions } from '../components/common';
-import { masteryLabel, statsFor, toneColor } from '../lib/analysis';
 import { modeName } from '../lib/game';
-import { glyph, lab, TRAINABLE } from '../lib/keys';
 import { dataset, useStore } from '../lib/store';
 import { pct, relDate } from '../lib/util';
 
@@ -41,22 +40,28 @@ function Charts({ sessions }: { sessions: ReturnType<typeof dataset>['sessions']
 
 export function Progress() {
   const version = useStore();
-  const { openKey, openRound } = useActions();
+  const { start, openRound } = useActions();
   const ds = useMemo(() => dataset(), [version]);
   const { taps: t, sessions: rs } = ds;
   const hits = t.filter((x) => x.h === x.k).length;
   const bestW = Math.max(0, ...rs.map((s) => s.wpm || 0));
-  const mastery = useMemo(() => TRAINABLE.map((k) => ({ k, s: statsFor(t, k) })), [t]);
   return (
     <main className="screen">
       <Topbar />
-      <SectionH title="Progress">{ds.sample && <span className="pill sample">Sample data</span>}</SectionH>
+      <SectionH title="Progress" />
+      {ds.sample && (
+        <div className="samplebar">
+          <div><b>Example data.</b> Take the baseline to see yours.</div>
+          <button className="btn primary" onClick={() => start('baseline')}>Start</button>
+        </div>
+      )}
       <div className="tiles">
         <div className="tile"><span className="eyebrow">Rounds</span><span className="num">{rs.length}</span></div>
         <div className="tile"><span className="eyebrow">Taps</span><span className="num">{t.length.toLocaleString()}</span></div>
         <div className="tile"><span className="eyebrow">Accuracy</span><span className="num">{t.length ? pct(hits / t.length) : 0}<small>%</small></span></div>
         <div className="tile"><span className="eyebrow">Best speed</span><span className="num">{Math.round(bestW)}<small>wpm</small></span></div>
       </div>
+      <TapMap taps={t} />
       {rs.length ? <Charts sessions={rs} /> : <div className="card small muted">No rounds yet. Accuracy and speed show up here after your first one.</div>}
       {!ds.sample && (
         <>
@@ -76,20 +81,6 @@ export function Progress() {
           </section>
         </>
       )}
-      <SectionH title="Key mastery"><span className="eyebrow">Tap a key</span></SectionH>
-      <section className="card">
-        <div className="keys-mastery">
-          {mastery.map(({ k, s }) => (
-            <button key={k} className="km" aria-label={`${lab(k)} mastery ${s.n ? s.mastery : 'no data'}`} onClick={() => openKey(k)}>
-              <span className="ring">
-                <Ring v={s.n ? s.mastery / 100 : 0} color={s.n ? toneColor(masteryLabel(s.mastery)[1]) : 'var(--line)'} />
-                <b>{glyph(k)}</b>
-              </span>
-              {s.n ? s.mastery : '–'}
-            </button>
-          ))}
-        </div>
-      </section>
     </main>
   );
 }
