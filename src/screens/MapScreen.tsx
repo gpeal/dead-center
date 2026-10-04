@@ -9,7 +9,7 @@ import type { Kb } from '../lib/keyboard';
 import { dataset, useStore } from '../lib/store';
 import { pct } from '../lib/util';
 
-const MODES: [MapMode, string][] = [['heat', 'Heat'], ['aim', 'Aim'], ['zones', 'Zones'], ['miss', 'Misses']];
+const MODES: [MapMode, string][] = [['zones', 'Zones'], ['miss', 'Misses'], ['aim', 'Aim'], ['heat', 'Heat']];
 
 function Legend({ mode, recent, taps }: { mode: MapMode; recent: boolean; taps: number }) {
   const note = recent ? 'recent taps count most' : `all ${taps.toLocaleString()} taps`;
@@ -38,7 +38,7 @@ function Legend({ mode, recent, taps }: { mode: MapMode; recent: boolean; taps: 
 export function MapScreen() {
   const version = useStore();
   const { start, openKey } = useActions();
-  const [mode, setMode] = useState<MapMode>('heat');
+  const [mode, setMode] = useState<MapMode>(MODES[0][0]);
   const [range, setRange] = useState<'recent' | 'all'>('recent');
   const half = range === 'recent' ? recentHalf() : ALL;
   const scheme = useScheme();
