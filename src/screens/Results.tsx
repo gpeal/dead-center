@@ -5,7 +5,7 @@ import { KeyboardView } from '../components/KeyboardView';
 import { MissMap } from '../components/MissMap';
 import { ZoneLegend, ZoneMap } from '../components/ZoneMap';
 import { UpdateBanner } from '../components/Toasts';
-import { ALL, thumbTip, troubleKeys, zoneFindings } from '../lib/analysis';
+import { ALL, troubleKeys, zoneFindings } from '../lib/analysis';
 import { ARROW_SCALE, drawMissKeys } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
@@ -63,7 +63,6 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
     if (cv) drawMissKeys(cv, kb, taps, []);
   }, [taps]);
 
-  const [tip] = useState(() => thumbTip(taps, result.caseSlips, prec));
   // Keys (each key's arrow and the worst keys magnified) or Zones (rows by side); the choice carries to later rounds
   const [view, setView] = useState<View>(readView);
   const pick = (v: View) => {
@@ -118,12 +117,6 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
               <div className="legend">
                 {slips ? <span>{slips}</span> : <><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
               </div>
-            </section>
-          )}
-          {taps.length > 0 && (
-            <section className="card tip">
-              <span className="eyebrow">Try this next round</span>
-              <p>{tip}</p>
             </section>
           )}
           <div className="btnstack">

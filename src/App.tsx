@@ -6,7 +6,7 @@ import { needsInstall } from './lib/install';
 import { TabBar } from './components/TabBar';
 import { Toasts, UpdateBanner } from './components/Toasts';
 import { pastResult, Round, type RoundResult } from './lib/round';
-import { thumbTip, troubleKeys } from './lib/analysis';
+import { troubleKeys } from './lib/analysis';
 import { allTaps, realSessions, save, store, useStore, type Mode } from './lib/store';
 import { Hero, Home } from './screens/Home';
 import { Practice } from './screens/Practice';
@@ -17,7 +17,7 @@ import { Results } from './screens/Results';
 const ORDER: Tab[] = ['home', 'progress', 'profile'];
 // past: a saved round reopened from Progress, which returns there when closed; quiet: reopened by a reload, so no confetti
 // home: the round waiting on the Type tab, which opens straight into typing once the baseline is done
-type Overlay = { kind: 'practice'; round: Round; home?: boolean; tip?: string } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean; home?: boolean } | null;
+type Overlay = { kind: 'practice'; round: Round; home?: boolean } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean; home?: boolean } | null;
 
 // The current tab (#map, #progress, #profile) and the results screen (#results-<id>, or #round-<id> for one reopened
 // from Progress) are kept in the URL, so a reload, including the update banner's Reload button, lands back there.
@@ -33,14 +33,6 @@ function homePlay(): [Mode, string[]] {
   const keys = troubleKeys(allTaps()).map((t) => t.k);
   return store.S.settings.play === 'drill' && keys.length ? ['drill', keys] : ['round', []];
 }
-/** The last finished round's tip, shown on the Type tab until the first tap. */
-function lastTip() {
-  const last = realSessions().at(-1);
-  if (!last) return undefined;
-  const taps = allTaps().filter((t) => t.sid === last.id);
-  return taps.length ? thumbTip(taps, last.caseSlips || 0, last.prec || 0) : undefined;
-}
-
 export function App() {
   const version = useStore();
   const [tab, setTab] = useState<Tab>(() => {
@@ -82,7 +74,7 @@ export function App() {
     // rounds started from the Type tab (including Next round on its results) keep the Type tab's controls
     const home = !gated && tabRef.current === 'home' && realSessions().length > 0;
     const round = new Round(mode, focus.filter(Boolean), (result) => setOverlay({ kind: 'results', result, home }));
-    setOverlay({ kind: 'practice', round, home, tip: home ? lastTip() : undefined });
+    setOverlay({ kind: 'practice', round, home });
   }, [overlay, gated]);
   // the Type tab is the typing screen itself: whenever it's showing with nothing on top, a round is waiting
   useLayoutEffect(() => {
@@ -147,7 +139,7 @@ export function App() {
         <TabBar tab={tab} onGo={go} />
       </Activity>
       {sheetKey && <KeySheet key={sheetKey} k={sheetKey} onClose={closeSheet} />}
-      {overlay?.kind === 'practice' && <Practice key={overlay.round.sid} round={overlay.round} home={overlay.home} tip={overlay.tip} onExit={() => closeOverlay()} onSwitch={switchPlay} onNav={navFromType} />}
+      {overlay?.kind === 'practice' && <Practice key={overlay.round.sid} round={overlay.round} home={overlay.home} onExit={() => closeOverlay()} onSwitch={switchPlay} onNav={navFromType} />}
       {overlay?.kind === 'results' && <Results key={overlay.result.sess.id} result={overlay.result} past={overlay.past} quiet={overlay.quiet} onStart={(m, f) => (overlay.home && m === 'round' ? start(...homePlay()) : start(m, f))} onClose={closeOverlay} />}
       <Toasts />
       <UpdateBanner />

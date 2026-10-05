@@ -146,12 +146,6 @@ export function KeySheet({ k, onClose }: { k: string; onClose: () => void }) {
         </div>
       )}
       <div className="why"><h3>What's happening</h3>{dg.why.map((p) => <p key={p}>{p}</p>)}</div>
-      {dg.fixes.length > 0 && (
-        <div className="why">
-          <h3>How to fix it</h3>
-          <ul className="fixes">{dg.fixes.map((f) => <li key={f}><Icon name="check" /><span>{f}</span></li>)}</ul>
-        </div>
-      )}
       {series.length >= 2 && (
         <div className="why">
           <h3>Accuracy by round</h3>
