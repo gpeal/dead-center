@@ -1,31 +1,42 @@
 import { useCallback, useState, type ReactNode } from 'react';
-import { useScheme } from './common';
+import { useActions, useScheme } from './common';
+import { hitTest, TRAINABLE } from '../lib/keys';
 import { KeyboardView } from './KeyboardView';
 import { drawZones, ZONE_SCALE } from '../lib/draw';
 import type { Kb } from '../lib/keyboard';
 import type { Tap } from '../lib/store';
 
 /**
- * The round's taps by zone (see ZONES in analysis): rows split by side, one averaged drift arrow each. With `strip`,
- * the space above the keyboard matches the Keys view's magnifier strip (same formula as MissMap) and holds `strip`'s
- * content, so switching views doesn't move the keyboard.
+ * A results map with a strip above the keyboard the same height as the Keys view's magnifiers (same formula as
+ * MissMap), so the keyboard sits in the same place in every view. Tapping a key opens its detail.
  */
-export function ZoneMap({ taps, strip }: { taps: Tap[]; strip?: ReactNode }) {
-  const scheme = useScheme();
+export function StripMap({ paint: draw, strip }: { paint: (kb: Kb) => void; strip: ReactNode }) {
+  const { openKey } = useActions();
   const [stripH, setStripH] = useState(130);
   const paint = useCallback((kb: Kb) => {
-    const cv = kb.el.parentElement?.querySelector('canvas');
-    if (cv) drawZones(cv, kb, taps);
+    draw(kb);
     setStripH(Math.min(112, Math.floor((kb.el.clientWidth - 20) / 3)) + 26);
-  }, [taps, scheme]);
-  const map = <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>;
-  if (strip === undefined) return map;
+  }, [draw]);
+  const onTap = useCallback((x: number, y: number) => {
+    const k = hitTest(x, y);
+    if (TRAINABLE.includes(k)) openKey(k);
+  }, [openKey]);
   return (
     <div className="zonemap">
       <div className="zstrip" style={{ height: stripH }}>{strip}</div>
-      {map}
+      <KeyboardView className="mapwrap" paint={paint} onTap={onTap}><canvas /></KeyboardView>
     </div>
   );
+}
+
+/** The round's taps by zone (see ZONES in analysis): rows split by side, one averaged drift arrow each. */
+export function ZoneMap({ taps, strip }: { taps: Tap[]; strip: ReactNode }) {
+  const scheme = useScheme();
+  const paint = useCallback((kb: Kb) => {
+    const cv = kb.el.parentElement?.querySelector('canvas');
+    if (cv) drawZones(cv, kb, taps);
+  }, [taps, scheme]);
+  return <StripMap paint={paint} strip={strip} />;
 }
 
 export function ZoneLegend() {

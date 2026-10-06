@@ -3,7 +3,7 @@ import { useActions, useScheme } from './common';
 import { KeyboardView } from './KeyboardView';
 import { ALL, statsFor } from '../lib/analysis';
 import { drawLoupes, drawMissKeys, placeLoupes, type Loupe } from '../lib/draw';
-import { KEY, lab } from '../lib/keys';
+import { hitTest, KEY, lab, TRAINABLE } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { Tap } from '../lib/store';
 
@@ -33,10 +33,14 @@ export function MissMap({ keys, taps }: { keys: [string, Tap[]][]; taps: Tap[] }
     setLayout({ loupes, D: d });
     if (over.current) drawLoupes(over.current, kb, loupes, (k) => statsFor(taps, k, ALL), d, strip);
   }, [keys, taps, scheme]);
+  const onTap = useCallback((x: number, y: number) => {
+    const k = hitTest(x, y);
+    if (TRAINABLE.includes(k)) openKey(k);
+  }, [openKey]);
 
   return (
     <div className="missmap" style={{ paddingTop: stripH }}>
-      <KeyboardView className="mapwrap" paint={paint}><canvas className="dots" /></KeyboardView>
+      <KeyboardView className="mapwrap" paint={paint} onTap={onTap}><canvas className="dots" /></KeyboardView>
       <canvas ref={over} className="missmap-over" aria-hidden="true" />
       {layout?.loupes.map((l) => (
         <button key={l.k} className="missmap-loupe" style={{ left: l.x - D / 2, width: D, height: D }} aria-label={`${l.label.replace('→', 'onto')}. Open ${lab(l.k)} details`} onClick={() => openKey(l.k)} />

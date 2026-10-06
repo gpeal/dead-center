@@ -3,18 +3,38 @@ import { Icon } from '../components/Icon';
 import { KeyboardView } from '../components/KeyboardView';
 import { UpdateBanner } from '../components/Toasts';
 import type { Tab } from '../components/common';
-import { troubleKeys } from '../lib/analysis';
-import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { Hint, Round } from '../lib/round';
-import { allTaps, isGuest, save, store } from '../lib/store';
-import { COARSE, pct } from '../lib/util';
+import { isGuest, save, store } from '../lib/store';
+import { pct } from '../lib/util';
 
-const BASE_HINT: Record<string, Hint> = {
-  baseline: { tone: 'ok', label: 'Baseline', text: 'Type each line. Misses are logged and you keep going.' },
-  drill: { tone: 'warn', label: 'Drill', text: 'Gold dots mark the keys you are training.' },
-  round: { tone: 'ok', label: 'Round', text: 'Lines lean toward your weaker keys.' },
-};
+/** The Type tab's top bar before the first tap: the remembered Round / Drill switch and the way to the other screens. */
+export function HomeBar({ mode, onSwitch, onNav }: { mode: 'round' | 'drill'; onSwitch?: (m: 'round' | 'drill') => void; onNav?: (t: Tab) => void }) {
+  return (
+    <div className="p-top home">
+      <div className="seg small" role="group" aria-label="What to type">
+        {(['round', 'drill'] as const).map((m) => (
+          <button key={m} aria-pressed={mode === m} onClick={() => mode !== m && onSwitch?.(m)}>{m === 'round' ? 'Round' : 'Drill'}</button>
+        ))}
+      </div>
+      <nav className="p-nav" aria-label="Sections">
+        <button className="iconbtn" aria-label="Progress" onClick={() => onNav?.('progress')}><Icon name="chart" /></button>
+        <button className="iconbtn" aria-label="Profile" onClick={() => onNav?.('profile')}><Icon name={isGuest() ? 'guest' : 'person'} /></button>
+      </nav>
+    </div>
+  );
+}
+
+/** Practice sound on/off, shared by rounds and drills. */
+export function useSoundToggle() {
+  const [soundOn, setSoundOn] = useState(store.S.settings.sound);
+  const toggle = () => {
+    store.S.settings.sound = !store.S.settings.sound;
+    save();
+    setSoundOn(store.S.settings.sound);
+  };
+  return [soundOn, toggle] as const;
+}
 
 function Line({ r }: { r: Round }) {
   const line = r.line, F = new Set(r.mode === 'drill' ? r.focus : []);
@@ -48,7 +68,7 @@ export function Practice({ round: r, home = false, onExit, onSwitch, onNav }: {
   round: Round; home?: boolean; onExit: () => void; onSwitch?: (m: 'round' | 'drill') => void; onNav?: (t: Tab) => void;
 }) {
   useSyncExternalStore(r.subscribe, r.getVersion);
-  const [soundOn, setSoundOn] = useState(store.S.settings.sound);
+  const [soundOn, toggleSound] = useSoundToggle();
   const [armedAt, setArmedAt] = useState(0);
   const kbRef = useRef<Kb | null>(null);
 
@@ -75,33 +95,17 @@ export function Practice({ round: r, home = false, onExit, onSwitch, onNav }: {
     r.abort();
     onExit();
   };
-  const toggleSound = () => {
-    store.S.settings.sound = !store.S.settings.sound;
-    save();
-    setSoundOn(store.S.settings.sound);
-  };
 
   const waiting = home && !r.t0;
-  const drillKeys = waiting ? troubleKeys(allTaps()).map((t) => t.k) : [];
-  const hint: Hint = armedAt ? { tone: 'bad', label: 'End round?', text: 'Tap × again to stop. Taps so far are kept.' } : r.hint || BASE_HINT[r.mode];
-  const title = r.mode === 'baseline' ? 'Baseline' : r.mode === 'drill' ? `Drill · ${r.focus.map(lab).join(' ')}` : 'Adaptive round';
+  // only the things you need to act on: the end-round confirm and the realign notice
+  const hint: Hint | null = armedAt ? { tone: 'bad', label: 'End round?', text: 'Tap × again to stop. Taps so far are kept.' } : r.hint;
+  const title = r.mode === 'baseline' ? 'Baseline' : 'Adaptive round';
 
   return (
     <section className="practice">
       <div className="col">
         {waiting ? (
-          <div className="p-top home">
-            <div className="seg small" role="group" aria-label="What to type">
-              <button aria-pressed={r.mode !== 'drill'} onClick={() => r.mode === 'drill' && onSwitch?.('round')}>Round</button>
-              {drillKeys.length > 0 && (
-                <button aria-pressed={r.mode === 'drill'} onClick={() => r.mode !== 'drill' && onSwitch?.('drill')}>Drill {drillKeys.map(lab).join(' ')}</button>
-              )}
-            </div>
-            <nav className="p-nav" aria-label="Sections">
-              <button className="iconbtn" aria-label="Progress" onClick={() => onNav?.('progress')}><Icon name="chart" /></button>
-              <button className="iconbtn" aria-label="Profile" onClick={() => onNav?.('profile')}><Icon name={isGuest() ? 'guest' : 'person'} /></button>
-            </nav>
-          </div>
+          <HomeBar mode="round" onSwitch={onSwitch} onNav={onNav} />
         ) : (
         <div className="p-top">
           <button className="iconbtn" aria-label="End round" onClick={close}><Icon name="close" /></button>
@@ -132,10 +136,11 @@ export function Practice({ round: r, home = false, onExit, onSwitch, onNav }: {
         {/* the floating update banner hides during rounds, and the Type tab is always a round, so it shows here until the first tap */}
         {waiting && <UpdateBanner inline />}
         <div className="p-text">
-          <div className="p-hint">
-            <span className={'pill ' + hint.tone}>{hint.label}</span> {hint.text}
-            {!COARSE && !r.hint && !armedAt && <span className="muted"> (Mouse works, but thumbs are what this measures.)</span>}
-          </div>
+          {hint && (
+            <div className="p-hint">
+              <span className={'pill ' + hint.tone}>{hint.label}</span> {hint.text}
+            </div>
+          )}
           <Line r={r} />
         </div>
       </div>

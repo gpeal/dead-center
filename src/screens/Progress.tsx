@@ -12,7 +12,9 @@ function Charts({ sessions }: { sessions: ReturnType<typeof dataset>['sessions']
   const last = sessions.slice(-30);
   const lo = Math.min(0.7, ...last.map((s) => Math.min(s.acc, s.prec || 1)));
   const yMin = Math.floor(lo * 10) / 10;
-  const top = Math.ceil(Math.max(20, ...last.map((s) => s.wpm || 0)) / 10) * 10;
+  // drills are single letters with a Space reset between them, so they have no typing speed
+  const sp = last.filter((s) => s.wpm);
+  const top = Math.ceil(Math.max(20, ...sp.map((s) => s.wpm || 0)) / 10) * 10;
   return (
     <>
       <section className="card chartcard">
@@ -27,13 +29,15 @@ function Charts({ sessions }: { sessions: ReturnType<typeof dataset>['sessions']
           yMin={yMin} yMax={1} ticks={[yMin, (yMin + 1) / 2, 1].map((v) => Math.round(v * 100) / 100)} fmt={(v) => Math.round(v * 100) + '%'} xLabel={(i) => dateLabel(last[i].ts)} pointLabel={(i) => relDate(last[i].ts)}
         />
       </section>
+      {sp.length > 0 && (
       <section className="card chartcard">
         <div className="hd">
           <span className="eyebrow">Speed</span>
           <span className="legend" style={{ padding: 0 }}>wpm</span>
         </div>
-        <LineChart series={[{ values: last.map((s) => s.wpm || 0), color: 'var(--green)', label: 'Speed' }]} yMin={0} yMax={top} ticks={[0, top / 2, top]} fmt={(v) => String(Math.round(v))} height={130} xLabel={(i) => dateLabel(last[i].ts)} pointLabel={(i) => relDate(last[i].ts)} tipFmt={(v) => Math.round(v) + ' wpm'} />
+        <LineChart series={[{ values: sp.map((s) => s.wpm || 0), color: 'var(--green)', label: 'Speed' }]} yMin={0} yMax={top} ticks={[0, top / 2, top]} fmt={(v) => String(Math.round(v))} height={130} xLabel={(i) => dateLabel(sp[i].ts)} pointLabel={(i) => relDate(sp[i].ts)} tipFmt={(v) => Math.round(v) + ' wpm'} />
       </section>
+      )}
     </>
   );
 }

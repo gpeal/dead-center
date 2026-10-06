@@ -311,7 +311,7 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 
 /* ---------- overlays ---------- */
 .overlay{position:relative;background:var(--bg)}
-.overlay .app{padding-block:calc(env(safe-area-inset-top,0px) + 26px) calc(env(safe-area-inset-bottom,0px) + 16px)}
+.overlay .app{padding-block:calc(env(safe-area-inset-top,0px) + 44px) calc(env(safe-area-inset-bottom,0px) + 16px)}
 .res-hero{position:relative;display:flex;flex-direction:column;align-items:center;text-align:center;gap:6px;padding-block:4px 0}
 .res-close{position:absolute;left:-8px;top:-4px}
 .screen.res{gap:12px}
@@ -323,9 +323,9 @@ textarea.backup{width:100%;min-height:52px;border-radius:12px;border:1px solid v
 .statrow .tile.best .eyebrow{color:var(--green)}
 .misses{padding:12px 12px 10px}
 .kb.dim .key span{opacity:.38}
-.mapfoot{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.mapfoot{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:8px}
 .mapfoot .legend{flex:1;min-width:0}
-.mapfoot .seg.small{width:118px;flex:none}
+.mapfoot .seg.small{width:170px;flex:none}
 .zstrip{padding-bottom:10px}
 .zstrip .zfind{height:100%;justify-content:center;gap:10px;padding:10px 14px;border-radius:16px;background:var(--surface-2)}
 .zfind{display:flex;flex-direction:column;gap:6px;padding-inline:4px}
@@ -401,3 +401,17 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 @media (min-width:700px){
   .app{padding-block:20px calc(var(--tab-h) + 40px)}
 }
+/* drill: one big prompt at a time above the keyboard */
+.d-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-block:14px 22px}
+.d-rep{font:500 12px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.d-cap{width:132px;height:132px;border-radius:28px;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;font:400 84px/1 var(--f-kb);color:var(--ink);animation:capIn .22s cubic-bezier(.2,1.3,.4,1)}
+.d-cap.space{width:220px;height:84px;border-radius:22px;font:500 20px/1 var(--f-body);color:var(--muted);transition:background-color .3s}
+.d-cap.space.ok{background:color-mix(in srgb,var(--green) 16%,var(--surface))}
+.d-cap.space.bad{background:color-mix(in srgb,var(--red) 18%,var(--surface))}
+@keyframes capIn{from{opacity:0;transform:scale(.86)}}
+.d-next{font-size:14px;color:var(--muted)}
+.d-review{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;animation:capIn .25s ease-out}
+.d-scatter{width:100%;max-width:340px;border-radius:18px}
+.d-sum{display:flex;flex-direction:column;align-items:center;gap:3px}
+.d-sum b{font:800 18px/1.1 var(--f-display);font-variation-settings:"wdth" 112}
+.d-sum span{font:500 12px/1 var(--f-mono);color:var(--muted)}

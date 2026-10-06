@@ -1,18 +1,16 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '../components/Icon';
 import type { Tab } from '../components/common';
-import { KeyboardView } from '../components/KeyboardView';
 import { MissMap } from '../components/MissMap';
-import { ZoneLegend, ZoneMap } from '../components/ZoneMap';
+import { StripMap, ZoneMap } from '../components/ZoneMap';
 import { UpdateBanner } from '../components/Toasts';
-import { ALL, troubleKeys, zoneFindings } from '../lib/analysis';
-import { ARROW_SCALE, drawMissKeys } from '../lib/draw';
+import { ALL, zoneFindings } from '../lib/analysis';
+import { drawMissKeys } from '../lib/draw';
 import { confetti, sound } from '../lib/feedback';
 import { modeName } from '../lib/game';
-import { lab } from '../lib/keys';
 import type { Kb } from '../lib/keyboard';
 import type { RoundResult } from '../lib/round';
-import { allTaps, type Mode, type Tap } from '../lib/store';
+import { type Mode, type Tap } from '../lib/store';
 import { reduceMotion, relDate } from '../lib/util';
 
 function CountUp({ to, suffix = '' }: { to: number; suffix?: string }) {
@@ -43,7 +41,6 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
   const byKey: Record<string, Tap[]> = {};
   for (const t of taps) if (t.h !== t.k) (byKey[t.k] ||= []).push(t);
   const missKeys = Object.entries(byKey).sort((a, b) => b[1].length - a[1].length).slice(0, 3);
-  const [focus] = useState(() => (missKeys.length ? missKeys.map((m) => m[0]) : troubleKeys(allTaps()).slice(0, 2).map((t) => t.k)));
 
   const celebrated = useRef(false);
   useEffect(() => {
@@ -75,10 +72,6 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
   };
   const findings = useMemo(() => topFindings(taps), [taps]);
   const viewSeg = <ViewSeg view={view} onPick={pick} />;
-  const slips = [
-    result.caseSlips > 0 && `${result.caseSlips} wrong-case letter${result.caseSlips > 1 ? 's' : ''}`,
-    result.realigns > 0 && `out of step ${result.realigns}× (not counted)`,
-  ].filter(Boolean).join(' · ');
 
   return (
     <div className="overlay" id="results">
@@ -92,39 +85,31 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
           <div className="statrow">
             <div className="tile"><span className="eyebrow">Accuracy</span><CountUp to={acc * 100} suffix="%" /></div>
             <div className="tile"><span className="eyebrow">Centered</span><CountUp to={prec * 100} suffix="%" /></div>
-            <div className={'tile' + (pbW ? ' best' : '')}><span className="eyebrow">{pbW ? 'Best WPM' : 'WPM'}</span><CountUp to={s.wpm || 0} /></div>
+            {s.mode === 'drill' && !s.wpm ? (
+              <div className="tile"><span className="eyebrow">Letters</span><CountUp to={s.n} /></div>
+            ) : (
+              <div className={'tile' + (pbW ? ' best' : '')}><span className="eyebrow">{pbW ? 'Best WPM' : 'WPM'}</span><CountUp to={s.wpm || 0} /></div>
+            )}
             <div className="tile"><span className="eyebrow">Combo</span><CountUp to={s.combo || 0} /></div>
           </div>
           {!taps.length ? (
             <section className="card small muted">The tap details for this round are no longer stored; only the most recent 40,000 taps are kept.</section>
-          ) : view === 'zones' ? (
-            // laid out like the Keys view below it (same card, strip and footer) so switching doesn't shift anything
-            <section className={'card ' + (missKeys.length ? 'misses' : 'mapcard')}>
-              <ZoneMap taps={taps} strip={missKeys.length ? <Findings f={findings} /> : undefined} />
-              <div className="mapfoot"><ZoneLegend />{viewSeg}</div>
-              {missKeys.length ? slips && <p className="slips">{slips}</p> : <Findings f={findings} />}
-            </section>
-          ) : missKeys.length ? (
-            <section className="card misses">
-              <MissMap keys={missKeys} taps={taps} />
-              <div className="mapfoot"><ArrowLegend misses />{viewSeg}</div>
-              {slips && <p className="slips">{slips}</p>}
-            </section>
           ) : (
-            <section className="card mapcard">
-              <KeyboardView className="mapwrap" paint={paint}><canvas /></KeyboardView>
-              <div className="mapfoot"><ArrowLegend />{viewSeg}</div>
-              <div className="legend">
-                {slips ? <span>{slips}</span> : <><span><b>No misses.</b> {result.maxBull >= 5 ? `Best bullseye run: ${result.maxBull}.` : 'Every tap found its key.'}</span></>}
-              </div>
+            // every view has the same strip above the keyboard and only the switch below, so switching doesn't shift anything
+            <section className="card misses">
+              {view === 'zones' ? (
+                <ZoneMap taps={taps} strip={<Findings f={findings} />} />
+              ) : missKeys.length ? (
+                <MissMap keys={missKeys} taps={taps} />
+              ) : (
+                <StripMap paint={paint} strip={<div className="zfind"><div><b>No misses</b><span className="mono small">{taps.length} taps</span></div></div>} />
+              )}
+              <div className="mapfoot">{viewSeg}</div>
             </section>
           )}
           <div className="btnstack">
             <button className="btn primary block" onClick={() => onStart('round')}><Icon name="play" />{past ? 'Start a round' : 'Next round'}</button>
-            <div className="btnrow">
-              {focus.length > 0 && <button className="btn gold" onClick={() => onStart('drill', focus)}><Icon name="target" />Drill {focus.map(lab).join(' ')}</button>}
-              <button className="btn ghost" onClick={() => onClose('progress')}>Tap map</button>
-            </div>
+            <button className="btn ghost block" onClick={() => onClose('progress')}>Tap map</button>
             <UpdateBanner inline />
           </div>
         </div>
@@ -133,7 +118,6 @@ export function Results({ result, past = false, quiet = false, onStart, onClose 
   );
 }
 
-/** Explains the median arrows on the round's keyboard. */
 type View = 'keys' | 'zones';
 const VIEW_KEY = 'dc.resultsView';
 function readView(): View {
@@ -161,11 +145,4 @@ function topFindings(taps: Tap[]) {
 function Findings({ f }: { f: ReturnType<typeof topFindings> }) {
   if (!f.length) return <div className="zfind"><div><span className="muted">No row or thumb trend this round.</span></div></div>;
   return <div className="zfind">{f.map((x) => <div key={x.t}><b>{x.t}</b><span className="mono small">{x.v}</span></div>)}</div>;
-}
-function ArrowLegend({ misses = false }: { misses?: boolean }) {
-  return (
-    <div className="legend">
-      <span>arrow = median tap, {ARROW_SCALE}× long{misses ? ' · red dot = miss' : ''}</span>
-    </div>
-  );
 }

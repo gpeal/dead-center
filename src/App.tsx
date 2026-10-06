@@ -6,10 +6,11 @@ import { needsInstall } from './lib/install';
 import { TabBar } from './components/TabBar';
 import { Toasts, UpdateBanner } from './components/Toasts';
 import { pastResult, Round, type RoundResult } from './lib/round';
-import { troubleKeys } from './lib/analysis';
-import { allTaps, realSessions, save, store, useStore, type Mode } from './lib/store';
+import { realSessions, save, store, useStore, type Mode } from './lib/store';
 import { Hero, Home } from './screens/Home';
 import { Practice } from './screens/Practice';
+import { DrillScreen } from './screens/DrillScreen';
+import { Drill, drillKeys } from './lib/drill';
 import { Profile } from './screens/Profile';
 import { Progress } from './screens/Progress';
 import { Results } from './screens/Results';
@@ -17,7 +18,7 @@ import { Results } from './screens/Results';
 const ORDER: Tab[] = ['home', 'progress', 'profile'];
 // past: a saved round reopened from Progress, which returns there when closed; quiet: reopened by a reload, so no confetti
 // home: the round waiting on the Type tab, which opens straight into typing once the baseline is done
-type Overlay = { kind: 'practice'; round: Round; home?: boolean } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean; home?: boolean } | null;
+type Overlay = { kind: 'practice'; round: Round | Drill; home?: boolean } | { kind: 'results'; result: RoundResult; past?: boolean; quiet?: boolean; home?: boolean } | null;
 
 // The current tab (#map, #progress, #profile) and the results screen (#results-<id>, or #round-<id> for one reopened
 // from Progress) are kept in the URL, so a reload, including the update banner's Reload button, lands back there.
@@ -28,10 +29,9 @@ function overlayFromHash(): Overlay {
   return sess ? { kind: 'results', result: pastResult(sess), past: m[1] === 'round', quiet: true } : null;
 }
 
-/** The Type tab's round: the remembered Round / Drill choice, drilling the current trouble keys. */
+/** The Type tab's round: the remembered Round / Drill choice (a drill picks its own letters, see drillKeys). */
 function homePlay(): [Mode, string[]] {
-  const keys = troubleKeys(allTaps()).map((t) => t.k);
-  return store.S.settings.play === 'drill' && keys.length ? ['drill', keys] : ['round', []];
+  return store.S.settings.play === 'drill' ? ['drill', drillKeys()] : ['round', []];
 }
 export function App() {
   const version = useStore();
@@ -73,7 +73,8 @@ export function App() {
     if (!overlay) scrolls.current[tabRef.current] = window.scrollY;
     // rounds started from the Type tab (including Next round on its results) keep the Type tab's controls
     const home = !gated && tabRef.current === 'home' && realSessions().length > 0;
-    const round = new Round(mode, focus.filter(Boolean), (result) => setOverlay({ kind: 'results', result, home }));
+    const done = (result: RoundResult) => setOverlay({ kind: 'results', result, home });
+    const round = mode === 'drill' ? new Drill(focus.length ? focus : drillKeys(), done) : new Round(mode, focus.filter(Boolean), done);
     setOverlay({ kind: 'practice', round, home });
   }, [overlay, gated]);
   // the Type tab is the typing screen itself: whenever it's showing with nothing on top, a round is waiting
@@ -139,7 +140,9 @@ export function App() {
         <TabBar tab={tab} onGo={go} />
       </Activity>
       {sheetKey && <KeySheet key={sheetKey} k={sheetKey} onClose={closeSheet} />}
-      {overlay?.kind === 'practice' && <Practice key={overlay.round.sid} round={overlay.round} home={overlay.home} onExit={() => closeOverlay()} onSwitch={switchPlay} onNav={navFromType} />}
+      {overlay?.kind === 'practice' && (overlay.round instanceof Drill
+        ? <DrillScreen key={overlay.round.sid} drill={overlay.round} home={overlay.home} onExit={() => closeOverlay()} onSwitch={switchPlay} onNav={navFromType} />
+        : <Practice key={overlay.round.sid} round={overlay.round} home={overlay.home} onExit={() => closeOverlay()} onSwitch={switchPlay} onNav={navFromType} />)}
       {overlay?.kind === 'results' && <Results key={overlay.result.sess.id} result={overlay.result} past={overlay.past} quiet={overlay.quiet} onStart={(m, f) => (overlay.home && m === 'round' ? start(...homePlay()) : start(m, f))} onClose={closeOverlay} />}
       <Toasts />
       <UpdateBanner />
