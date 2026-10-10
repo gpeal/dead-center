@@ -53,6 +53,11 @@ export type Mark = 'in' | 'hit' | 'miss';
 export class Drill {
   readonly mode = 'drill' as const;
   ki = 0; seq: string[] = []; si = 0; reps = 0;
+  /** the rep after this one, shown faintly so a switch to a word is visible before you reach it */
+  upcoming: string[] = [];
+  /** bumps when a wrong key on an ungraded letter is ignored, so the screen can shake it */
+  shake = 0; slipped = false;
+  private undo: { seq: string[]; si: number; reps: number; upcoming: string[]; pushed: boolean; mark?: Mark; ok?: boolean; prec?: number }[] = [];
   taps: TapRow[] = []; sid = Date.now(); t0 = 0; tLast = 0; done = false;
   /** this letter's taps, newest last, and whether the letter is finished (shown briefly before the next) */
   marks: Mark[] = []; cleared = false;
@@ -66,6 +71,7 @@ export class Drill {
     const taps = allTaps();
     this.leads = keys.map((k) => leadIn(k, taps));
     this.words = keys.map((k, i) => wordsFor(this.leads[i], k));
+    this.upcoming = this.makeSeq(0);
     this.nextSeq();
   }
   subscribe = (l: () => void) => (this.listeners.add(l), () => this.listeners.delete(l));
@@ -84,12 +90,17 @@ export class Drill {
   get inWindow() { return this.marks.slice(-WINDOW).filter((m) => m === 'in').length; }
 
   // every third rep is a short word with the transition in it, when there is one
-  private nextSeq() {
+  private makeSeq(rep: number) {
     const ws = this.words[this.ki];
-    const w = this.reps % 3 === 2 && ws.length ? ws[Math.floor(Math.random() * ws.length)] : null;
-    this.seq = w ? w.split('') : [this.lead, this.key];
+    // picked from the rep number (and this drill), so taking a tap back never changes the word you were shown
+    const w = rep % 3 === 2 && ws.length ? ws[(Math.floor(rep / 3) * 7 + (this.sid % 97)) % ws.length] : null;
+    return w ? w.split('') : [this.lead, this.key];
+  }
+  private nextSeq() {
+    this.seq = this.upcoming;
     this.si = 0;
     this.reps++;
+    this.upcoming = this.makeSeq(this.reps);
   }
 
   private record(k: string, hit: string, down: Point, now: number) {
@@ -101,24 +112,40 @@ export class Drill {
 
   onKey = (hit: string, down: Point) => {
     if (this.done || this.cleared) return;
+    if (hit === 'del') return this.back();
     const now = performance.now();
     if (!this.t0) this.t0 = now;
-    const exp = this.next, r = this.record(exp, hit, down, now);
+    const exp = this.next;
+    // only the drilled letter is graded; anywhere else a wrong key is a slip, so it waits for the right one
+    if (exp !== this.key && hit !== exp) {
+      this.shake++;
+      this.slipped = true;
+      sound('miss');
+      return this.changed();
+    }
+    this.slipped = false;
+    const before = this.taps.length, snap = { seq: this.seq, si: this.si, reps: this.reps, upcoming: this.upcoming };
+    const r = this.record(exp, hit, down, now);
+    const entry: (typeof this.undo)[number] = { ...snap, pushed: this.taps.length > before };
+    this.undo.push(entry);
     this.tLast = now;
     if (exp === this.key) {
       const ok = hit === exp, e = edist(r.dx, r.dy, r.key);
       this.n++;
+      const prec = ok ? 1 - Math.min(1, e) : 0;
       if (ok) {
         this.hits++;
-        this.precSum += 1 - Math.min(1, e);
+        this.precSum += prec;
       }
       const m: Mark = ok && e <= GOLD ? 'in' : ok ? 'hit' : 'miss';
       this.marks.push(m);
+      Object.assign(entry, { mark: m, ok, prec });
       sound(m === 'miss' ? 'miss' : 'key');
       if (this.inWindow >= GOAL || this.marks.length >= MAX) {
         this.cleared = true;
         sound('chime');
-        this.timer = window.setTimeout(() => this.advance(), 900);
+        this.undo = [];
+        this.timer = window.setTimeout(() => this.advance(), 1400);
       }
     } else sound(hit === exp ? 'key' : 'miss');
     buzz();
@@ -127,15 +154,38 @@ export class Drill {
     this.changed();
   };
 
+  /** Delete: takes back the last tap on this letter completely (its dot, its streak mark and its stats). */
+  private back() {
+    const u = this.undo.pop();
+    this.slipped = false;
+    if (!u) return;
+    if (u.pushed) this.taps.pop();
+    if (u.mark) {
+      this.marks.pop();
+      this.n--;
+      if (u.ok) {
+        this.hits--;
+        this.precSum -= u.prec || 0;
+      }
+    }
+    Object.assign(this, { seq: u.seq, si: u.si, reps: u.reps, upcoming: u.upcoming });
+    sound('mod');
+    this.changed();
+  }
+
   private advance() {
     if (this.ki >= this.keys.length - 1) return this.finish();
     this.ki++;
     this.marks = [];
+    this.undo = [];
     this.cleared = false;
     this.reps = 0;
+    this.upcoming = this.makeSeq(0);
     this.nextSeq();
     this.changed();
   }
+  /** the next letter and its lead-in, shown while a finished letter is on screen */
+  get after() { return this.ki < this.keys.length - 1 ? { key: this.keys[this.ki + 1], lead: this.leads[this.ki + 1] } : null; }
 
   /** Ends early. Keeps the taps as a partial drill when there are enough of them. */
   abort() {

@@ -419,3 +419,8 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 .d-seq.done svg{width:34px;height:34px}
 @keyframes capIn{from{opacity:0;transform:translateY(6px)}}
 .d-next{font-size:14px;color:var(--muted)}
+.d-next b{color:var(--ink);font-weight:700}
+.d-row{display:flex;align-items:baseline;gap:18px}
+.d-up{font:500 22px/1 var(--f-kb);color:var(--faint);opacity:.7;letter-spacing:.12em}
+.d-seq.shook .cur{animation:dShake .28s}
+@keyframes dShake{20%,60%{transform:translateX(-4px)}40%,80%{transform:translateX(4px)}}

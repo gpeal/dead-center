@@ -83,13 +83,20 @@ export function DrillScreen({ drill: d, home = false, onExit, onSwitch, onNav }:
           {d.cleared ? (
             <div className="d-seq done"><b>{lab(d.key)}</b> <Icon name="check" /></div>
           ) : (
-            <div className="d-seq" key={d.reps}>
-              {d.seq.map((ch, i) => (
-                <span key={i} className={(ch === d.key ? 't' : '') + (i === d.si ? ' cur' : '') + (i < d.si ? ' past' : '')}>{ch === 'space' ? '␣' : ch}</span>
-              ))}
+            <div className="d-row">
+              <div className={'d-seq' + (d.slipped ? ' shook' : '')} key={d.reps + ':' + d.shake}>
+                {d.seq.map((ch, i) => (
+                  <span key={i} className={(ch === d.key ? 't' : '') + (i === d.si ? ' cur' : '') + (i < d.si ? ' past' : '')}>{ch === 'space' ? '␣' : ch}</span>
+                ))}
+              </div>
+              <div className="d-up" aria-hidden="true">{d.upcoming.map((ch) => (ch === 'space' ? '␣' : ch)).join('')}</div>
             </div>
           )}
-          <div className="d-next">{d.cleared ? (d.ki < d.keys.length - 1 ? 'Next letter' : 'Done') : `Land ${GOAL} of ${WINDOW} ${lab(d.key)} taps in the gold · ${Math.max(0, MAX - d.marks.length)} left`}</div>
+          <div className="d-next">
+            {d.cleared
+              ? d.after ? <>Next: <b>{lab(d.after.key)}</b>{d.after.lead !== 'space' ? <> after <b>{lab(d.after.lead)}</b></> : null}</> : 'Done'
+              : `Land ${GOAL} of ${WINDOW} ${lab(d.key)} taps in the gold · ${Math.max(0, MAX - d.marks.length)} left`}
+          </div>
         </div>
       </div>
       <KeyboardView live className="kbhost" paint={paint} onKey={d.onKey}><canvas className="drillfx" /></KeyboardView>
