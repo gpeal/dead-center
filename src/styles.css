@@ -401,17 +401,21 @@ body:has(.practice,#results) .updbar:not(.inline){display:none}
 @media (min-width:700px){
   .app{padding-block:20px calc(var(--tab-h) + 40px)}
 }
-/* drill: one big prompt at a time above the keyboard */
-.d-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding-block:14px 22px}
-.d-rep{font:500 12px/1 var(--f-mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.d-cap{width:132px;height:132px;border-radius:28px;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;font:400 84px/1 var(--f-kb);color:var(--ink);animation:capIn .22s cubic-bezier(.2,1.3,.4,1)}
-.d-cap.space{width:220px;height:84px;border-radius:22px;font:500 20px/1 var(--f-body);color:var(--muted);transition:background-color .3s}
-.d-cap.space.ok{background:color-mix(in srgb,var(--green) 16%,var(--surface))}
-.d-cap.space.bad{background:color-mix(in srgb,var(--red) 18%,var(--surface))}
-@keyframes capIn{from{opacity:0;transform:scale(.86)}}
+/* drill: the target lives on the keyboard; above it, the streak meter and what to type */
+.kbhost canvas.drillfx{position:absolute;left:0;top:0;pointer-events:none;z-index:2}
+.d-stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:14px;padding-block:14px 22px}
+.d-meter{display:flex;gap:8px}
+.d-meter i{width:30px;height:8px;border-radius:99px;background:var(--line);transition:background-color .2s}
+.d-meter i.in{background:var(--green)}
+.d-meter i.hit{background:var(--gold)}
+.d-meter i.miss{background:var(--red)}
+.d-seq{display:flex;gap:6px;font:500 40px/1 var(--f-kb);color:var(--faint);animation:capIn .2s ease-out}
+.d-seq span{min-width:.6em;text-align:center;padding-bottom:6px;border-bottom:3px solid transparent}
+.d-seq .t{color:var(--muted)}
+.d-seq .past{color:var(--ink-2)}
+.d-seq .cur{color:var(--ink);border-bottom-color:var(--accent)}
+.d-seq.done{align-items:center;gap:10px;color:var(--green)}
+.d-seq.done b{font:850 40px/1 var(--f-display);color:var(--ink)}
+.d-seq.done svg{width:34px;height:34px}
+@keyframes capIn{from{opacity:0;transform:translateY(6px)}}
 .d-next{font-size:14px;color:var(--muted)}
-.d-review{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;animation:capIn .25s ease-out}
-.d-scatter{width:100%;max-width:340px;border-radius:18px}
-.d-sum{display:flex;flex-direction:column;align-items:center;gap:3px}
-.d-sum b{font:800 18px/1.1 var(--f-display);font-variation-settings:"wdth" 112}
-.d-sum span{font:500 12px/1 var(--f-mono);color:var(--muted)}

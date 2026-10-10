@@ -1,4 +1,4 @@
-import { KEYS, KEY, KH, PITCH, TRAINABLE, hitTest } from './keys';
+import { KEYS, KEY, KH, PITCH, TRAINABLE, edist, hitTest } from './keys';
 import { ALL, recencyWeights, recentHalf, slowHalf, statsFor, zoneStats, type KeyStats } from './analysis';
 import { clamp, cssVar, gauss, median, pct, reduceMotion, rng } from './util';
 import type { Kb } from './keyboard';
@@ -540,4 +540,66 @@ export function heroAnim(cv: HTMLCanvasElement) {
   }
   raf = requestAnimationFrame(frame);
   return () => cancelAnimationFrame(raf);
+}
+
+/**
+ * The drill, drawn on the live keyboard itself so your eyes stay on the keys: the key due next is lit (the letter
+ * strongly, its lead-in softly), the letter carries its gold zone, every tap on it stays as a dot, and after a few
+ * taps a line shows the average drift with a faint ring where to aim to cancel it.
+ */
+export function drawDrill(cv: HTMLCanvasElement, kb: Kb, k: string, next: string, taps: Tap[], gold: number) {
+  const { c, W, H } = sizeCanvas(cv, kb);
+  c.clearRect(0, 0, W, H);
+  for (const key of KEYS) {
+    const e = kb.keyEls[key.id];
+    e.style.background = '';
+    e.style.boxShadow = '';
+  }
+  const accent = cssVar('--accent');
+  if (next !== k && kb.keyEls[next]) kb.keyEls[next].style.boxShadow = `inset 0 0 0 2px color-mix(in srgb, ${accent} 45%, transparent)`;
+  const te = kb.keyEls[k];
+  te.style.background = `color-mix(in srgb, ${accent} ${next === k ? 18 : 8}%, var(--kb-key))`;
+  te.style.boxShadow = `inset 0 0 0 ${next === k ? 2.5 : 1.5}px ${next === k ? accent : `color-mix(in srgb, ${accent} 50%, transparent)`}`;
+  const key = KEY[k], ctr = kb.toPx(key.cx, key.cy);
+  const rx = (key.w / 2) * gold * kb.sx, ry = (key.h / 2) * gold * kb.sy;
+  c.globalAlpha = 0.18;
+  c.fillStyle = cssVar('--gold');
+  c.beginPath(); c.ellipse(ctr.x, ctr.y, rx, ry, 0, 0, 7); c.fill();
+  c.globalAlpha = 0.9;
+  c.strokeStyle = cssVar('--gold');
+  c.setLineDash([3, 2.5]);
+  c.lineWidth = 1.3;
+  c.beginPath(); c.ellipse(ctr.x, ctr.y, rx, ry, 0, 0, 7); c.stroke();
+  c.setLineDash([]);
+  const green = cssVar('--green'), red = cssVar('--red'), gld = cssVar('--gold');
+  taps.forEach((t, i) => {
+    const p = kb.toPx(key.cx + t.dx, key.cy + t.dy), inside = t.h === k && edist(t.dx, t.dy, key) <= gold, newest = i === taps.length - 1;
+    c.globalAlpha = newest ? 1 : 0.75;
+    c.fillStyle = t.h !== k ? red : inside ? green : gld;
+    c.beginPath(); c.arc(p.x, p.y, newest ? 4.6 : 3.4, 0, 7); c.fill();
+    if (newest) {
+      c.globalAlpha = 1;
+      c.strokeStyle = cssVar('--kb-key');
+      c.lineWidth = 1.5;
+      c.stroke();
+    }
+  });
+  if (taps.length >= 3) {
+    const mx = k === 'space' ? 0 : taps.reduce((a, t) => a + t.dx, 0) / taps.length, my = taps.reduce((a, t) => a + t.dy, 0) / taps.length;
+    if (Math.hypot(mx, my) >= 1.2) {
+      const m = kb.toPx(key.cx + mx, key.cy + my), aim = kb.toPx(key.cx - mx, key.cy - my), ink = cssVar('--kb-ink');
+      c.globalAlpha = 0.7;
+      c.strokeStyle = ink;
+      c.lineWidth = 1.8;
+      c.lineCap = 'round';
+      c.beginPath(); c.moveTo(ctr.x, ctr.y); c.lineTo(m.x, m.y); c.stroke();
+      // aim marker: where to aim so the average lands on center
+      c.globalAlpha = 0.85;
+      c.strokeStyle = accent;
+      c.lineWidth = 1.6;
+      c.beginPath(); c.arc(aim.x, aim.y, 5.5, 0, 7); c.stroke();
+      c.beginPath(); c.moveTo(aim.x - 3, aim.y); c.lineTo(aim.x + 3, aim.y); c.moveTo(aim.x, aim.y - 3); c.lineTo(aim.x, aim.y + 3); c.stroke();
+    }
+  }
+  c.globalAlpha = 1;
 }
